@@ -10,10 +10,13 @@ First, install Chippy:
 
 ```bash
 git clone https://github.com/ucb-substrate/chippy.git
+git submodule update --init --recursive
 cd chippy
 ./mill __.publishLocal
 cd ..
 ```
+
+Install [espresso](https://github.com/chipsalliance/espresso) for NoC generation. If using a Chipyard environment, espresso should already be on PATH.
 
 Then, compile Iris:
 
