@@ -1,4 +1,4 @@
-package edu.berkeley.cs.iris.digital
+package edu.berkeley.cs.iris
 
 import os.Path
 import circt.stage.ChiselStage

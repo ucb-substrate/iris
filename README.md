@@ -30,5 +30,5 @@ git submodule update --init
 To generate top-level Verilog, run the following:
 
 ```
-./mill test.testOnly "*.IrisSpec" -- -z Verilog
+./mill test.testOnly edu.berkeley.cs.iris.IrisSpec -- -z Verilog
 ```

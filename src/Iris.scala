@@ -1,4 +1,4 @@
-package edu.berkeley.cs.iris.digital
+package edu.berkeley.cs.iris
 
 import org.chipsalliance.cde.config.Config
 import freechips.rocketchip.amba.axi4.{AXI4Bundle}
