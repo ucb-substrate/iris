@@ -18,7 +18,7 @@ import testchipip.uart.UARTAdapter
 import freechips.rocketchip.jtag.JTAGIO
 import freechips.rocketchip.util._
 import freechips.rocketchip.devices.debug.SimJTAG
-import edu.berkeley.cs.chippyip.{SimTSI, TSIIO}
+import edu.berkeley.cs.chippy.{SimTSI, TSIIO}
 // import testchipip.tsi._
 import testchipip.dram._
 import testchipip.tsi.SerialRAM
@@ -121,7 +121,7 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
   digitalClock := source.io.clk
 
   withClockAndReset(digitalClock, io.reset) {
-    val chiptop0_lazy = LazyModule(new DigitalChipTop)
+    val chiptop0_lazy = LazyModule(new IrisTop)
     val chiptop0 = Module(chiptop0_lazy.module)
     chiptop0.io.clock := digitalClock
     chiptop0.io.reset := io.reset.asAsyncReset
@@ -178,7 +178,7 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
   }
 
   withClockAndReset(digitalClock, io.reset) {
-    val chiptop1_lazy = LazyModule(new DigitalChipTop)
+    val chiptop1_lazy = LazyModule(new IrisTop)
     val chiptop1 = Module(chiptop1_lazy.module)
     chiptop1.io.clock := digitalClock
     chiptop1.io.reset := io.reset.asAsyncReset
@@ -236,23 +236,23 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
 
 }
 
-class DigitalChipSpec extends AnyFunSpec {
-  describe("DigitalChip") {
+class IrisSpec extends AnyFunSpec {
+  describe("Iris") {
     it("should generate valid System Verilog") {
-      implicit val p = new DigitalChipConfig
+      implicit val p = new IrisConfig
       ChiselStage.emitSystemVerilogFile(
-        LazyModule(new DigitalChipTop).module,
+        LazyModule(new IrisTop).module,
         args = Array(
           "--target-dir",
-          (Utils.buildRoot / "DigitalChip_should_generate_valid_System_Verilog")
+          (Utils.buildRoot / "Iris_should_generate_valid_System_Verilog")
             .toString()
         )
       )
     }
 
     it("should run hello.riscv") {
-      implicit val p = new DigitalChipConfig(sim = true)
-      val workDir = Utils.buildRoot / "DigitalChip_should_run_hello_riscv"
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_hello_riscv"
 
       // TODO: Figure out why this passes even when simulation errors.
       Utils.simulateTopWithBinaries(

@@ -1,6 +1,6 @@
-# Iris Digital
+# Iris
 
-Iris consists of two Shuttle cores with outer product units and two UCIe modules.
+Iris is a chip consisting of two Shuttle cores with outer product units and two UCIe modules.
 
 ## Usage
 
@@ -21,8 +21,8 @@ Install [espresso](https://github.com/chipsalliance/espresso) for NoC generation
 Then, compile Iris:
 
 ```bash
-git clone git@github.com:ucb-substrate/iris-digital.git
-cd iris-digital
+git clone git@github.com:ucb-substrate/iris.git
+cd iris
 git submodule update --init
 ./mill compile
 ```

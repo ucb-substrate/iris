@@ -41,7 +41,7 @@ class JTAGChipIO(hasReset: Boolean) extends Bundle {
   val reset = Option.when(hasReset)(Input(Bool()))
 }
 
-class DigitalSystem(implicit p: Parameters)
+class IrisSystem(implicit p: Parameters)
     extends edu.berkeley.cs.chippy.ChippySystem
     with testchipip.soc.CanHaveSubsystemInjectors // Enables the subsystem injector API
     with testchipip.soc.CanHaveSwitchableOffchipBus // Enables optional off-chip-bus with interface-switch
@@ -50,10 +50,10 @@ class DigitalSystem(implicit p: Parameters)
     with edu.berkeley.cs.chippy.clocking.HasChippyPRCI
     with constellation.soc.CanHaveGlobalNoC
 
-class DigitalChipTop(implicit p: Parameters)
+class IrisTop(implicit p: Parameters)
     extends LazyModule
     with BindingScope {
-  val system = LazyModule(new DigitalSystem)
+  val system = LazyModule(new IrisSystem)
   val clockGroupsSourceNode = ClockGroupSourceNode(
     Seq(ClockGroupSourceParameters())
   )
@@ -64,8 +64,8 @@ class DigitalChipTop(implicit p: Parameters)
     .fixedClockNode
   def debugClockBundle = debugClockSinkNode.in.head._1
 
-  override lazy val module = new DigitalChipTopImpl
-  class DigitalChipTopImpl extends LazyRawModuleImp(this) with DontTouch {
+  override lazy val module = new IrisTopImpl
+  class IrisTopImpl extends LazyRawModuleImp(this) with DontTouch {
     val io = IO(new Bundle {
       val clock = Input(Clock())
       val reset = Input(AsyncReset())
@@ -108,7 +108,6 @@ class DigitalChipTop(implicit p: Parameters)
     // Tie off interupts and chip ID
     system.module.interrupts := DontCare
 
-    // val serial_tl = IO(DataMirror.internal.chiselTypeClone[DecoupledExternalSyncPhitIO](system.serial_tls(0)))
     val serial_tl = IO(
       new DecoupledExternalSyncPhitIO(p(SerialTLKey)(0).phyParams.phitWidth)
     )
@@ -120,10 +119,9 @@ class DigitalChipTop(implicit p: Parameters)
 
 /** Digital chip configuration.
   *
-  * Simulation flag expands tilelink bus and adds AXI port to allow faster
-  * binary loading.
+  * Simulation flag expands tilelink bus to allow faster binary loading.
   */
-class DigitalChipConfig(sim: Boolean = false)
+class IrisConfig(sim: Boolean = false)
     extends Config(
       // ==================================
       // Set up buses
