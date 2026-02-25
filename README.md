@@ -2,6 +2,8 @@
 
 Iris is a chip consisting of two Shuttle cores with outer product units and two UCIe modules.
 
+This repo only contains the process-agnostic portions of the chip. Process-specific tapeout collateral is only accessible to BWRC members.
+
 ## Usage
 
 Iris uses [Chippy](https://github.com/ucb-substrate/chippy) to enable standalone compilation.
