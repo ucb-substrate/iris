@@ -1,0 +1,78 @@
+//| mill-version: 1.1.2
+
+package build
+
+import mill._
+import scalalib._
+
+object `package` extends ChipModule {
+  def moduleDeps = Seq(shuttle, saturn, rocketchip)
+
+  def mvnDeps = Seq(
+    mvn"org.chipsalliance::chisel:${chiselVersion}",
+    mvn"edu.berkeley.cs::cde:0.0.1",
+    mvn"edu.berkeley.cs::diplomacy:0.0.1",
+    mvn"edu.berkeley.cs::testchipip:0.0.1",
+    mvn"edu.berkeley.cs::rocketchip-blocks:0.0.1",
+    mvn"edu.berkeley.cs::rocketchip-inclusive-cache:0.0.1",
+    mvn"edu.berkeley.cs::chippy:0.0.1",
+    mvn"edu.berkeley.cs::constellation:0.0.1",
+  )
+  def scalacPluginMvnDeps = Seq(
+    mvn"org.chipsalliance:::chisel-plugin:${chiselVersion}",
+  )
+
+  object test extends ScalaTests, TestModule.ScalaTest {
+    def mvnDeps = Seq(
+      mvn"org.scalatest::scalatest:3.2.19",
+      mvn"edu.berkeley.cs::testchipip:0.0.1",
+      mvn"edu.berkeley.cs::chippyip:0.0.1",
+    )
+  }
+
+  object rocketchip extends ChipModule {
+    def moduleDir = super.moduleDir / os.up / "rocket-chip"
+
+    def mvnDeps = Seq(
+      mvn"org.chipsalliance::chisel:${chiselVersion}",
+          mvn"com.lihaoyi::mainargs:0.5.0",
+    mvn"org.json4s::json4s-jackson:4.0.5",
+    mvn"com.lihaoyi::sourcecode:0.3.1",
+      mvn"edu.berkeley.cs::cde:0.0.1",
+      mvn"edu.berkeley.cs::diplomacy:0.0.1",
+      mvn"edu.berkeley.cs::hardfloat:0.0.1",
+    )
+    def scalacPluginMvnDeps = Seq(
+      mvn"org.chipsalliance:::chisel-plugin:${chiselVersion}",
+    )
+  }
+
+  object shuttle extends ChipModule {
+    def moduleDeps = Seq(rocketchip)
+
+    def mvnDeps = Seq(
+      mvn"org.chipsalliance::chisel:${chiselVersion}",
+      mvn"edu.berkeley.cs::cde:0.0.1",
+      mvn"edu.berkeley.cs::diplomacy:0.0.1",
+    )
+    def scalacPluginMvnDeps = Seq(
+      mvn"org.chipsalliance:::chisel-plugin:${chiselVersion}",
+    )
+  }
+
+  object saturn extends ChipModule {
+    def moduleDir = super.moduleDir / os.up / "saturn-vectors"
+
+    def moduleDeps = Seq(shuttle, rocketchip)
+
+    def mvnDeps = Seq(
+      mvn"org.chipsalliance::chisel:${chiselVersion}",
+      mvn"edu.berkeley.cs::cde:0.0.1",
+      mvn"edu.berkeley.cs::diplomacy:0.0.1",
+    )
+    def scalacPluginMvnDeps = Seq(
+      mvn"org.chipsalliance:::chisel-plugin:${chiselVersion}",
+    )
+  }
+}
+

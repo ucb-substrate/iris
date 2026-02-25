@@ -1,0 +1,9 @@
+[submodule "shuttle"]
+	path = shuttle
+	url = git@github.com:ucb-bar/shuttle.git
+[submodule "saturn-vectors"]
+	path = saturn-vectors
+	url = git@github.com:ucb-bar/saturn-vectors.git
+[submodule "rocket-chip"]
+	path = rocket-chip
+	url = https://github.com/chipsalliance/rocket-chip.git
