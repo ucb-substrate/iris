@@ -30,5 +30,5 @@ git submodule update --init
 To generate top-level Verilog, run the following:
 
 ```
-./mill test.testOnly "*.DigitalChipSpec" -- -z Verilog
+./mill test.testOnly "*.IrisSpec" -- -z Verilog
 ```
