@@ -50,9 +50,7 @@ class IrisSystem(implicit p: Parameters)
     with edu.berkeley.cs.chippy.clocking.HasChippyPRCI
     with constellation.soc.CanHaveGlobalNoC
 
-class IrisTop(implicit p: Parameters)
-    extends LazyModule
-    with BindingScope {
+class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
   val system = LazyModule(new IrisSystem)
   val clockGroupsSourceNode = ClockGroupSourceNode(
     Seq(ClockGroupSourceParameters())
@@ -391,5 +389,3 @@ class IrisConfig(sim: Boolean = false)
 
         new freechips.rocketchip.system.BaseConfig
     )
-
-

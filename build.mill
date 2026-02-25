@@ -34,9 +34,9 @@ object `package` extends ChipModule {
 
     def mvnDeps = Seq(
       mvn"org.chipsalliance::chisel:${chiselVersion}",
-          mvn"com.lihaoyi::mainargs:0.5.0",
-    mvn"org.json4s::json4s-jackson:4.0.5",
-    mvn"com.lihaoyi::sourcecode:0.3.1",
+      mvn"com.lihaoyi::mainargs:0.5.0",
+      mvn"org.json4s::json4s-jackson:4.0.5",
+      mvn"com.lihaoyi::sourcecode:0.3.1",
       mvn"edu.berkeley.cs::cde:0.0.1",
       mvn"edu.berkeley.cs::diplomacy:0.0.1",
       mvn"edu.berkeley.cs::hardfloat:0.0.1",
