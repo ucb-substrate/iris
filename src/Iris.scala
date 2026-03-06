@@ -217,7 +217,7 @@ class IrisConfig(sim: Boolean = false)
           256,
           VectorParams.opuParams
         ) ++
-        new shuttle.common.WithShuttleTileBeatBytes(16) ++
+        new shuttle.common.WithShuttleTileBeatBytes(32) ++
         new shuttle.common.WithTCM(size = 128L << 10, banks = 2) ++
         new shuttle.common.WithShuttleTileBoundaryBuffers() ++
         // ICache
@@ -228,7 +228,6 @@ class IrisConfig(sim: Boolean = false)
         // new shuttle.common.WithL1DCacheSets(256) ++
         new shuttle.common.WithL1DCacheBanks(1) ++
         new shuttle.common.WithL1DCacheTagBanks(1) ++
-        new shuttle.common.WithShuttleTileBeatBytes(16) ++
         new shuttle.common.WithNShuttleCores(2) ++
 
         // 1 serial tilelink port
