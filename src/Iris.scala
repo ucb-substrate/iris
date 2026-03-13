@@ -43,6 +43,7 @@ class JTAGChipIO(hasReset: Boolean) extends Bundle {
 
 class IrisSystem(implicit p: Parameters)
     extends edu.berkeley.cs.chippy.ChippySystem
+    with testchipip.soc.CanHaveChipletRouting
     with testchipip.soc.CanHaveSubsystemInjectors // Enables the subsystem injector API
     with testchipip.soc.CanHaveSwitchableOffchipBus // Enables optional off-chip-bus with interface-switch
     with testchipip.serdes.CanHavePeripheryTLSerial
@@ -112,6 +113,10 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
     serial_tl <> system.serial_tls(0)
     val uart = IO(chiselTypeOf(system.uart(0)))
     uart <> system.uart(0)
+
+    // Connect D2D SerialTL
+    val c2c_serial_tl = IO(new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth))
+    c2c_serial_tl <> system.d2d_port_ios.get(0)
   }
 }
 
@@ -229,6 +234,16 @@ class IrisConfig(sim: Boolean = false)
         new shuttle.common.WithL1DCacheBanks(1) ++
         new shuttle.common.WithL1DCacheTagBanks(1) ++
         new shuttle.common.WithNShuttleCores(2) ++
+
+        // Chiplet Router with D2D SerialTL
+        new testchipip.soc.WithChipletRouting(testchipip.soc.ChipletRoutingParams(
+          routerParams = testchipip.soc.OffchipRouterParams(tableEntries = 4),
+          ports = Seq(testchipip.serdes.SerialTLParams(
+            client = Some(testchipip.serdes.SerialTLClientParams(masterWhere = SBUS)),
+            manager = Some(testchipip.serdes.SerialTLManagerParams()),
+            phyParams = testchipip.serdes.CreditedSourceSyncSerialPhyParams(),
+            bundleParams = testchipip.serdes.TLSerdesser.STANDARD_TLBUNDLE_PARAMS.copy(sourceBits = 9) // Temp hack
+        )))) ++
 
         // 1 serial tilelink port
         new testchipip.serdes.WithSerialTL(

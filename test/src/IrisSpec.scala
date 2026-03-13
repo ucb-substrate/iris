@@ -22,7 +22,8 @@ import edu.berkeley.cs.chippy.{SimTSI, TSIIO}
 // import testchipip.tsi._
 import testchipip.dram._
 import testchipip.tsi.SerialRAM
-import testchipip.serdes.SerialTLKey
+import testchipip.serdes.{SerialTLKey, CreditedSourceSyncPhitIO}
+import testchipip.soc.ChipletRoutingKey
 import chisel3.simulator.stimulus.RunUntilSuccess
 import chisel3.testing.HasTestingDirectory
 import java.nio.file.Paths
@@ -120,6 +121,9 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
   source.io.gate := false.B
   digitalClock := source.io.clk
 
+  val c2c0 = new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).phyParams.phitWidth)
+  val c2c1 = new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).phyParams.phitWidth)
+
   withClockAndReset(digitalClock, io.reset) {
     val chiptop0_lazy = LazyModule(new IrisTop)
     val chiptop0 = Module(chiptop0_lazy.module)
@@ -159,6 +163,8 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
     )
     ram.io.ser.in <> chiptop0.serial_tl.out
     chiptop0.serial_tl.in <> ram.io.ser.out
+
+    c2c0 <> chiptop0.chiplet_links(0).top_IO
 
     implicit def view[A <: Data, B <: Data]
         : DataView[testchipip.tsi.TSIIO, TSIIO] =
@@ -217,6 +223,8 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
     ram.io.ser.in <> chiptop1.serial_tl.out
     chiptop1.serial_tl.in <> ram.io.ser.out
 
+    c2c1 <> chiptop1.chiplet_links(0).top_IO
+
     implicit def view[A <: Data, B <: Data]
         : DataView[testchipip.tsi.TSIIO, TSIIO] =
       DataView(
@@ -234,6 +242,8 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
     when(success) { io.success := true.B }
   }
 
+  // Connect the two chips through D2D SerialTL
+  c2c0.connect(c2c1)
 }
 
 class IrisSpec extends AnyFunSpec {
