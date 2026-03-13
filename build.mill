@@ -6,13 +6,12 @@ import mill._
 import scalalib._
 
 object `package` extends ChipModule {
-  def moduleDeps = Seq(shuttle, saturn, rocketchip)
+  def moduleDeps = Seq(shuttle, saturn, rocketchip, testchipip)
 
   def mvnDeps = Seq(
     mvn"org.chipsalliance::chisel:${chiselVersion}",
     mvn"edu.berkeley.cs::cde:0.0.1",
     mvn"edu.berkeley.cs::diplomacy:0.0.1",
-    mvn"edu.berkeley.cs::testchipip:0.0.1",
     mvn"edu.berkeley.cs::rocketchip-blocks:0.0.1",
     mvn"edu.berkeley.cs::rocketchip-inclusive-cache:0.0.1",
     mvn"edu.berkeley.cs::chippy:0.0.1",
@@ -23,9 +22,10 @@ object `package` extends ChipModule {
   )
 
   object test extends ScalaTests, TestModule.ScalaTest {
+    def moduleDeps = super.moduleDeps ++ Seq(testchipip)
+
     def mvnDeps = Seq(
       mvn"org.scalatest::scalatest:3.2.19",
-      mvn"edu.berkeley.cs::testchipip:0.0.1",
     )
   }
 
@@ -69,6 +69,21 @@ object `package` extends ChipModule {
       mvn"edu.berkeley.cs::cde:0.0.1",
       mvn"edu.berkeley.cs::diplomacy:0.0.1",
     )
+    def scalacPluginMvnDeps = Seq(
+      mvn"org.chipsalliance:::chisel-plugin:${chiselVersion}",
+    )
+  }
+
+  object testchipip extends ChipModule {
+    def moduleDeps = Seq(rocketchip)
+
+    def mvnDeps = Seq(
+      mvn"edu.berkeley.cs::rocketchip-blocks:0.0.1",
+      mvn"org.chipsalliance::chisel:${chiselVersion}",
+      mvn"edu.berkeley.cs::cde:0.0.1",
+      mvn"edu.berkeley.cs::diplomacy:0.0.1",
+    )
+
     def scalacPluginMvnDeps = Seq(
       mvn"org.chipsalliance:::chisel-plugin:${chiselVersion}",
     )
