@@ -77,6 +77,8 @@ object `package` extends ChipModule {
   object testchipip extends ChipModule {
     def moduleDeps = Seq(rocketchip)
 
+    def resources = Task.Sources(moduleDir / "src" / "main" / "resources")
+
     def mvnDeps = Seq(
       mvn"edu.berkeley.cs::rocketchip-blocks:0.0.1",
       mvn"org.chipsalliance::chisel:${chiselVersion}",
