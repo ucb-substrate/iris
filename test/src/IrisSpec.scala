@@ -121,8 +121,8 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
   source.io.gate := false.B
   digitalClock := source.io.clk
 
-  val c2c0 = new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).phyParams.phitWidth)
-  val c2c1 = new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).phyParams.phitWidth)
+  val c2c0 = new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth)
+  val c2c1 = new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth)
 
   withClockAndReset(digitalClock, io.reset) {
     val chiptop0_lazy = LazyModule(new IrisTop)
@@ -164,7 +164,7 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
     ram.io.ser.in <> chiptop0.serial_tl.out
     chiptop0.serial_tl.in <> ram.io.ser.out
 
-    c2c0 <> chiptop0.chiplet_links(0).top_IO
+    c2c0 <> chiptop0.c2c_serial_tl
 
     implicit def view[A <: Data, B <: Data]
         : DataView[testchipip.tsi.TSIIO, TSIIO] =
@@ -223,7 +223,7 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
     ram.io.ser.in <> chiptop1.serial_tl.out
     chiptop1.serial_tl.in <> ram.io.ser.out
 
-    c2c1 <> chiptop1.chiplet_links(0).top_IO
+    c2c1 <> chiptop1.c2c_serial_tl
 
     implicit def view[A <: Data, B <: Data]
         : DataView[testchipip.tsi.TSIIO, TSIIO] =
