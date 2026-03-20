@@ -1,4 +1,4 @@
-#include "testchip_htif.h"
+#include "iris_testchip_htif.h"
 
 void testchip_htif_t::parse_htif_args(std::vector<std::string> &args) {
   for (auto& arg : args) {

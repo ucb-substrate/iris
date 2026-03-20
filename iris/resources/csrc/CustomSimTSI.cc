@@ -2,7 +2,7 @@
 #include <svdpi.h>
 #include <map>
 #include <string>
-#include "testchip_tsi.h"
+#include "iris_testchip_tsi.h"
 
 std::map<int, testchip_tsi_t*> tsis;
 

@@ -1,4 +1,4 @@
-#include "testchip_tsi.h"
+#include "iris_testchip_tsi.h"
 #include <stdexcept>
 
 testchip_tsi_t::testchip_tsi_t(int argc, char** argv, bool can_have_loadmem, int chip_id) : tsi_t(argc, argv)

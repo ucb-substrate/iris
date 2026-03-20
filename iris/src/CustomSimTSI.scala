@@ -32,7 +32,7 @@ object TSIIO {
   }
 }
 
-object SimTSI {
+object CustomSimTSI {
   def connect(
       tsi: Option[TSIIO],
       clock: Clock,
@@ -43,7 +43,7 @@ object SimTSI {
   ): Bool = {
     val exit = tsi
       .map { s =>
-        val sim = Module(new SimTSI(chipId, binaryPath, plusArgs))
+        val sim = Module(new CustomSimTSI(chipId, binaryPath, plusArgs))
         sim.io.clock := clock
         sim.io.reset := reset
         sim.io.tsi <> s
@@ -59,7 +59,7 @@ object SimTSI {
 }
 
 // TODO: Handle escaping
-class SimTSI(chipId: Int, binaryPath: Path, plusArgs: Seq[String] = Seq.empty)
+class CustomSimTSI(chipId: Int, binaryPath: Path, plusArgs: Seq[String] = Seq.empty)
     extends BlackBox(
       Map(
         "CHIPID" -> IntParam(chipId),
@@ -77,10 +77,10 @@ class SimTSI(chipId: Int, binaryPath: Path, plusArgs: Seq[String] = Seq.empty)
     val exit = Output(UInt(32.W))
   })
 
-  addResource("/vsrc/SimTSI.sv")
-  addResource("/csrc/SimTSI.cc")
-  addResource("/csrc/testchip_htif.cc")
-  addResource("/csrc/testchip_htif.h")
-  addResource("/csrc/testchip_tsi.cc")
-  addResource("/csrc/testchip_tsi.h")
+  addResource("/vsrc/CustomSimTSI.sv")
+  addResource("/csrc/CustomSimTSI.cc")
+  addResource("/csrc/iris_testchip_htif.cc")
+  addResource("/csrc/iris_testchip_htif.h")
+  addResource("/csrc/iris_testchip_tsi.cc")
+  addResource("/csrc/iris_testchip_tsi.h")
 }

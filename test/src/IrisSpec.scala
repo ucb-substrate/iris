@@ -18,7 +18,6 @@ import testchipip.uart.UARTAdapter
 import freechips.rocketchip.jtag.JTAGIO
 import freechips.rocketchip.util._
 import freechips.rocketchip.devices.debug.SimJTAG
-import edu.berkeley.cs.chippy.{SimTSI, TSIIO}
 // import testchipip.tsi._
 import testchipip.dram._
 import testchipip.tsi.SerialRAM
@@ -121,10 +120,11 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
   source.io.gate := false.B
   digitalClock := source.io.clk
 
-  val c2c0 = new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth)
-  val c2c1 = new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth)
+  val c2c0 = Wire(new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth))
+  val c2c1 = Wire(new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth))
 
   withClockAndReset(digitalClock, io.reset) {
+    val chipid0 = 0
     val chiptop0_lazy = LazyModule(new IrisTop)
     val chiptop0 = Module(chiptop0_lazy.module)
     chiptop0.io.clock := digitalClock
@@ -174,16 +174,18 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
         _.out -> _.out
       )
     val success =
-      SimTSI.connect(
+      CustomSimTSI.connect(
         ram.io.tsi.map(_.viewAs[TSIIO]),
         digitalClock,
         io.reset,
+        chipid0,
         chip0BinaryPath
       )
     when(success) { io.success := true.B }
   }
 
   withClockAndReset(digitalClock, io.reset) {
+    val chipid1 = 1
     val chiptop1_lazy = LazyModule(new IrisTop)
     val chiptop1 = Module(chiptop1_lazy.module)
     chiptop1.io.clock := digitalClock
@@ -233,10 +235,11 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
         _.out -> _.out
       )
     val success =
-      SimTSI.connect(
+      CustomSimTSI.connect(
         ram.io.tsi.map(_.viewAs[TSIIO]),
         digitalClock,
         io.reset,
+        chipid1,
         chip1BinaryPath
       )
     when(success) { io.success := true.B }
@@ -267,8 +270,26 @@ class IrisSpec extends AnyFunSpec {
       // TODO: Figure out why this passes even when simulation errors.
       Utils.simulateTopWithBinaries(
         workDir,
-        Utils.root / "software/hello0.riscv",
-        Utils.root / "software/hello1.riscv"
+        Utils.root / "software/build/hello.riscv",
+        Utils.root / "software/build/hello.riscv"
+      )
+    }
+
+    it("should run router tests") {
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_router_test"
+
+      val chipid0 = 1
+      val chipid1 = 2
+      val chipidReg = p(ChipletRoutingKey).get.routerParams.tableAddress + p(ChipletRoutingKey).get.routerParams.tableEntries * 32
+      val extraSimArgs = f"+chip_id0=0x${chipidReg}%08x:0x${chipid0}%08x +chip_id1=0x${chipidReg}%08x:0x${chipid1}%08x"
+
+      // TODO: Figure out why this passes even when simulation errors.
+      Utils.simulateTopWithBinaries(
+        workDir,
+        Utils.root / "software/build/router.riscv",
+        Utils.root / "software/build/router.riscv",
+        extraSimArgs
       )
     }
   }

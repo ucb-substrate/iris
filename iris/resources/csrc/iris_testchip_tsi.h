@@ -5,7 +5,7 @@
 
 #include <fesvr/tsi.h>
 #include <fesvr/htif.h>
-#include "testchip_htif.h"
+#include "iris_testchip_htif.h"
 
 class testchip_tsi_t : public tsi_t, public testchip_htif_t
 {

@@ -63,7 +63,8 @@ script -f -c "./simulation </dev/null 2> >(spike-dasm > simulation.out)" simulat
       topModule: String,
       sourceFilesList: Path,
       incDirs: Seq[Path] = Seq.empty,
-      loadmem: Boolean = true
+      loadmem: Boolean = true,
+      extraSimArgs: String
   ) = {
     // val dramsim_ini =
     //   getClass.getResource("/dramsim2_ini").getPath
@@ -96,7 +97,7 @@ script -f -c "./simulation +permissive +dramsim +dramsim_ini_dir=${dramsim_ini.t
           s" +loadmem=${(root / "software/hello0.riscv").toString}"
         } else {
           ""
-        }} +permissive-off placeholder-binary </dev/null 2> >(spike-dasm > simulation.out)" simulation.log
+        }} ${extraSimArgs} +permissive-off placeholder-binary </dev/null 2> >(spike-dasm > simulation.out)" simulation.log
 """
     )
     path.toIO.setExecutable(true)
@@ -118,7 +119,8 @@ script -f -c "./simulation +permissive +dramsim +dramsim_ini_dir=${dramsim_ini.t
   def simulateTopWithBinaries(
       workDir: Path,
       chip0BinaryPath: Path,
-      chip1BinaryPath: Path
+      chip1BinaryPath: Path,
+      extraSimArgs: String = ""
   )(implicit p: Parameters) = {
     assert(
       os.exists(chip0BinaryPath),
@@ -150,7 +152,8 @@ script -f -c "./simulation +permissive +dramsim +dramsim_ini_dir=${dramsim_ini.t
       simScript,
       "SimTop",
       sourceFilesList,
-      incDirs = os.walk(sourceDir).filter(os.isDir) ++ Seq(sourceDir)
+      incDirs = os.walk(sourceDir).filter(os.isDir) ++ Seq(sourceDir),
+      extraSimArgs = extraSimArgs
     )
 
     os.proc(
