@@ -237,7 +237,7 @@ class IrisConfig(sim: Boolean = false)
         new shuttle.common.WithL1DCacheTagBanks(1) ++
         new shuttle.common.WithNShuttleCores(2) ++
 
-        new testchipip.soc.WithMaxOffchipAddressRange(AddressSet.misaligned(0x200000000L, 0x200000000L)) ++
+        new testchipip.soc.WithMaxOffchipAddressRange(AddressSet.misaligned(0x800000000L, 0x1000000000L)) ++
 
         // Chiplet Router with D2D SerialTL
         new testchipip.soc.WithChipletRouting(testchipip.soc.ChipletRoutingParams(

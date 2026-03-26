@@ -8,7 +8,7 @@
 
 #define ROUTER_MMIO 0x4000
 #define CHIP_ID_ADDR 0x4080
-#define OFFCHIP_OFFSET 0x200000000L
+#define OFFCHIP_OFFSET 0x800000000L
 
 uint32_t src[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 uint32_t dest[10];
@@ -22,20 +22,24 @@ void program_router(uint64_t chip_id, uint64_t port, uint64_t table_entry) {
 }
 
 int rw_mem(uint64_t offset) {
+  // remote = dest on the other chip: same local address as our dest, tagged with target chip ID.
+  // offset = OFFCHIP_OFFSET * target_chipId (a byte offset, added via uint8_t* cast).
+  void *remote = (void *)((uint8_t *)dest + offset);
+
   size_t write_start = rdcycle();
-  memcpy(dest + offset, src, sizeof(src));
+  memcpy(remote, src, sizeof(src));
   size_t write_end = rdcycle();
 
   printf("Wrote %ld bytes in %ld cycles\n", sizeof(src), write_end - write_start);
 
   size_t read_start = rdcycle();
-  memcpy(test, dest + offset, sizeof(src));
+  memcpy(test, remote, sizeof(src));
   size_t read_end = rdcycle();
 
-  for (int i = 0; i < sizeof(src); i++) {
+  for (int i = 0; i < 10; i++) {
       if (src[i] != test[i]) {
-      printf("Remote write/read failed at %p %p %p %x %x\n", src+i, test+i, dest + offset + i, src[i], test[i]);
-      exit(1);
+        printf("Remote write/read failed at index %d: wrote %x, read %x\n", i, src[i], test[i]);
+        exit(1);
       }
   }
 
