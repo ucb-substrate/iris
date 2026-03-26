@@ -62,11 +62,11 @@ class ClockSourceAtFreqMHz(val freqMHz: Double)
   )
 }
 
-class SimTop(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
+class SimTop(chip0BinaryPath: Path, chip1BinaryPath: Path, plusArgs: Seq[String] = Seq.empty)(implicit
     p: Parameters
 ) extends RawModule {
   val driver = Module(new TestDriver)
-  val harness = Module(new TestHarness(chip0BinaryPath, chip1BinaryPath))
+  val harness = Module(new TestHarness(chip0BinaryPath, chip1BinaryPath, plusArgs))
   harness.io.reset := driver.reset
   driver.success := harness.io.success
 }
@@ -104,7 +104,7 @@ class TestHarnessIO extends Bundle {
   val reset = Input(Bool())
 }
 
-class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
+class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, plusArgs: Seq[String] = Seq.empty)(implicit
     p: Parameters
 ) extends RawModule {
   val io = IO(new Bundle {
@@ -179,7 +179,8 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
         digitalClock,
         io.reset,
         chipid0,
-        chip0BinaryPath
+        chip0BinaryPath,
+        plusArgs
       )
     when(success) { io.success := true.B }
   }
@@ -240,7 +241,8 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path)(implicit
         digitalClock,
         io.reset,
         chipid1,
-        chip1BinaryPath
+        chip1BinaryPath,
+        plusArgs
       )
     when(success) { io.success := true.B }
   }
@@ -282,14 +284,17 @@ class IrisSpec extends AnyFunSpec {
       val chipid0 = 1
       val chipid1 = 2
       val chipidReg = p(ChipletRoutingKey).get.routerParams.tableAddress + p(ChipletRoutingKey).get.routerParams.tableEntries * 32
-      val extraSimArgs = f"+chip_id0=0x${chipidReg}%08x:0x${chipid0}%08x +chip_id1=0x${chipidReg}%08x:0x${chipid1}%08x"
+      val plusArgs = Seq(
+        f"+chip_id0=0x${chipidReg}%08x:0x${chipid0}%08x",
+        f"+chip_id1=0x${chipidReg}%08x:0x${chipid1}%08x"
+      )
 
       // TODO: Figure out why this passes even when simulation errors.
       Utils.simulateTopWithBinaries(
         workDir,
         Utils.root / "software/build/router.riscv",
         Utils.root / "software/build/router.riscv",
-        extraSimArgs
+        plusArgs
       )
     }
   }
