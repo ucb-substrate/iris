@@ -12,7 +12,7 @@ extern "C" void tsi_init(int chip_id, svOpenArrayHandle argv, bool can_have_load
     int right = svRight(argv,1);
     char** argv_actual = (char **) svGetArrElemPtr1(argv, 0);
 
-    tsis[chip_id] = new testchip_tsi_t(right - left + 1, argv_actual, can_have_loadmem, chip_id);
+    tsis[chip_id] = new testchip_tsi_t(left - right + 1, argv_actual, can_have_loadmem, chip_id);
 }
 
 extern "C" int tsi_tick(
