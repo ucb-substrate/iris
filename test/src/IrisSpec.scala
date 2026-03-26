@@ -254,15 +254,19 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, plusArgs: Seq[St
 class IrisSpec extends AnyFunSpec {
   describe("Iris") {
     it("should generate valid System Verilog") {
+      val targetDir = Utils.buildRoot / "Iris_should_generate_valid_System_Verilog"
       implicit val p = new IrisConfig
       ChiselStage.emitSystemVerilogFile(
         LazyModule(new IrisTop).module,
         args = Array(
           "--target-dir",
-          (Utils.buildRoot / "Iris_should_generate_valid_System_Verilog")
-            .toString()
+          targetDir.toString()
         )
       )
+
+      freechips.rocketchip.util.ElaborationArtefacts.files.foreach { case (extension, contents) =>
+        os.write.over(targetDir / s"Iris.${extension}", contents ())
+      }
     }
 
     it("should run hello.riscv") {

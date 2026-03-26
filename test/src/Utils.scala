@@ -130,11 +130,14 @@ script -f -c "./simulation +permissive +dramsim +dramsim_ini_dir=${dramsim_ini.t
       "The provided chip1 binary does not exit. You may have to run `make` in the `software/` directory to make the binary first"
     )
 
-    os.remove.all(workDir)
     os.makeDir.all(workDir)
 
     val sourceDir = workDir / "src"
     val simDir = workDir / "sim"
+    val artifactsDir = workDir / "artifacts"
+    os.remove.all(sourceDir)
+    os.makeDir.all(simDir)
+    os.makeDir.all(artifactsDir)
 
     ChiselStage.emitSystemVerilogFile(
       new SimTop(chip0BinaryPath, chip1BinaryPath, plusArgs),
@@ -143,7 +146,9 @@ script -f -c "./simulation +permissive +dramsim +dramsim_ini_dir=${dramsim_ini.t
         sourceDir.toString
       )
     )
-
+    freechips.rocketchip.util.ElaborationArtefacts.files.foreach { case (extension, contents) =>
+      os.write.over(artifactsDir / s"Iris.${extension}", contents ())
+    }
     val sourceFiles = getSourceFiles(sourceDir)
 
     val sourceFilesList = simDir / "sourceFiles.F"
