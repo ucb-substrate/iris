@@ -276,8 +276,8 @@ class IrisSpec extends AnyFunSpec {
       // TODO: Figure out why this passes even when simulation errors.
       Utils.simulateTopWithBinaries(
         workDir,
-        Utils.root / "software/build/hello.riscv",
-        Utils.root / "software/build/hello.riscv"
+        Utils.root / "software/hello0.riscv",
+        Utils.root / "software/hello1.riscv"
       )
     }
 
@@ -296,8 +296,8 @@ class IrisSpec extends AnyFunSpec {
       // TODO: Figure out why this passes even when simulation errors.
       Utils.simulateTopWithBinaries(
         workDir,
-        Utils.root / "software/build/router.riscv",
-        Utils.root / "software/build/router.riscv",
+        Utils.root / "software/router.riscv",
+        Utils.root / "software/router.riscv",
         plusArgs
       )
     }
