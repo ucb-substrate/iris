@@ -118,8 +118,9 @@ script -f -c "./simulation +permissive +dramsim +dramsim_ini_dir=${dramsim_ini.t
   def simulateTopWithBinaries(
       workDir: Path,
       chip0BinaryPath: Path,
+      chip0PlusArgs: Seq[String] = Seq.empty,
       chip1BinaryPath: Path,
-      plusArgs: Seq[String] = Seq.empty
+      chip1PlusArgs: Seq[String] = Seq.empty  
   )(implicit p: Parameters) = {
     assert(
       os.exists(chip0BinaryPath),
@@ -140,7 +141,7 @@ script -f -c "./simulation +permissive +dramsim +dramsim_ini_dir=${dramsim_ini.t
     os.makeDir.all(artifactsDir)
 
     ChiselStage.emitSystemVerilogFile(
-      new SimTop(chip0BinaryPath, chip1BinaryPath, plusArgs),
+      new SimTop(chip0BinaryPath, chip0PlusArgs, chip1BinaryPath, chip1PlusArgs),
       args = Array(
         "--target-dir",
         sourceDir.toString
@@ -162,6 +163,8 @@ script -f -c "./simulation +permissive +dramsim +dramsim_ini_dir=${dramsim_ini.t
       sourceFilesList,
       incDirs = os.walk(sourceDir).filter(os.isDir) ++ Seq(sourceDir)
     )
+
+    println(s"Done (temp)")
 
     os.proc(
       "/bin/bash",
