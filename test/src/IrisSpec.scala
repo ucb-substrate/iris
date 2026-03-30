@@ -64,11 +64,11 @@ class ClockSourceAtFreqMHz(val freqMHz: Double)
   )
 }
 
-class SimTop(chip0BinaryPath: Path, chip0PlusArgs: Seq[String] = Seq.empty, chip1BinaryPath: Path, chip1PlusArgs: Seq[String] = Seq.empty)(implicit
+class SimTop(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: Seq[String] = Seq.empty, chip1PlusArgs: Seq[String] = Seq.empty)(implicit
     p: Parameters
 ) extends RawModule {
   val driver = Module(new TestDriver)
-  val harness = Module(new TestHarness(chip0BinaryPath, chip0PlusArgs, chip1BinaryPath, chip1PlusArgs))
+  val harness = Module(new TestHarness(chip0BinaryPath, chip1BinaryPath, chip0PlusArgs, chip1PlusArgs))
   harness.io.reset := driver.reset
   driver.success := harness.io.success
 }
@@ -106,7 +106,7 @@ class TestHarnessIO extends Bundle {
   val reset = Input(Bool())
 }
 
-class TestHarness(chip0BinaryPath: Path, chip0PlusArgs: Seq[String] = Seq.empty, chip1BinaryPath: Path, chip1PlusArgs: Seq[String] = Seq.empty)(implicit
+class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: Seq[String] = Seq.empty, chip1PlusArgs: Seq[String] = Seq.empty)(implicit
     p: Parameters
 ) extends RawModule {
   val io = IO(new Bundle {
@@ -214,8 +214,8 @@ class IrisSpec extends AnyFunSpec {
       // TODO: Figure out why this passes even when simulation errors.
       Utils.simulateTopWithBinaries(
         workDir,
-        chip0BinaryPath = Utils.root / "software/hello0.riscv",
-        chip1BinaryPath = Utils.root / "software/hello1.riscv",
+        Utils.root / "software/hello0.riscv",
+        Utils.root / "software/hello1.riscv",
       )
     }
 
@@ -236,8 +236,8 @@ class IrisSpec extends AnyFunSpec {
       Utils.simulateTopWithBinaries(
         workDir,
         Utils.root / "software/router.riscv",
-        chip0PlusArgs,
         Utils.root / "software/router.riscv",
+        chip0PlusArgs,
         chip1PlusArgs
       )
     }
