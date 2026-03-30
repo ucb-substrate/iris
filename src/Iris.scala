@@ -43,6 +43,7 @@ class JTAGChipIO(hasReset: Boolean) extends Bundle {
 
 class IrisSystem(implicit p: Parameters)
     extends edu.berkeley.cs.chippy.ChippySystem
+    with testchipip.soc.CanHaveChipletRouting
     with testchipip.soc.CanHaveSubsystemInjectors // Enables the subsystem injector API
     with testchipip.soc.CanHaveSwitchableOffchipBus // Enables optional off-chip-bus with interface-switch
     with testchipip.serdes.CanHavePeripheryTLSerial
@@ -112,6 +113,10 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
     serial_tl <> system.serial_tls(0)
     val uart = IO(chiselTypeOf(system.uart(0)))
     uart <> system.uart(0)
+
+    // Connect D2D SerialTL
+    val c2c_serial_tl = IO(new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth))
+    c2c_serial_tl <> system.d2d_port_ios.get(0)
   }
 }
 
@@ -131,7 +136,8 @@ class IrisConfig(sim: Boolean = false)
               "Core 0 ICache" -> 0, // Shuttle 0 (left)
               "Core 1 ICache" -> 1, // Shuttle 1 (right)
               "debug[0]" -> 2, // Front BUS
-              "Core 2 DCache" -> 4 // RocketTile
+              "Core 2 DCache" -> 4, // RocketTile
+              "d2d_serial_tl" -> 5 // D2D SerialTL
             ),
             outNodeMapping = ListMap(
               "Core 0 TCM" -> 0, // Shuttle 0 TCM (left)
@@ -141,6 +147,7 @@ class IrisConfig(sim: Boolean = false)
               "ram[3],serdesser[3]|" -> 3, // L2   (top)
               "ram[1],serdesser[1]|" -> 3, // L2   (bottom)
               "ram[0],serdesser[0]|" -> 3, // L2   (bottom)
+              "d2d_serial_tl" -> 5, // D2D SerialTL
               "ram[0]|" -> 6, // SBUS SPAD (?)
               "ram[1]|" -> 6 // MBUS SPAD (?)
             )
@@ -229,6 +236,18 @@ class IrisConfig(sim: Boolean = false)
         new shuttle.common.WithL1DCacheBanks(1) ++
         new shuttle.common.WithL1DCacheTagBanks(1) ++
         new shuttle.common.WithNShuttleCores(2) ++
+
+        new testchipip.soc.WithMaxOffchipAddressRange(AddressSet.misaligned(0x800000000L, 0x1000000000L)) ++
+
+        // Chiplet Router with D2D SerialTL
+        new testchipip.soc.WithChipletRouting(testchipip.soc.ChipletRoutingParams(
+          routerParams = testchipip.soc.OffchipRouterParams(tableEntries = 4),
+          ports = Seq(testchipip.serdes.SerialTLParams(
+            client = Some(testchipip.serdes.SerialTLClientParams(masterWhere = SBUS)),
+            manager = Some(testchipip.serdes.SerialTLManagerParams()),
+            phyParams = testchipip.serdes.CreditedSourceSyncSerialPhyParams(),
+            bundleParams = testchipip.serdes.TLSerdesser.STANDARD_TLBUNDLE_PARAMS.copy(dataBits = 256) // Temp hack
+        )))) ++
 
         // 1 serial tilelink port
         new testchipip.serdes.WithSerialTL(
