@@ -8,12 +8,6 @@ import scalalib._
 object `package` extends ChipModule {
   def moduleDeps = Seq(shuttle, saturn, rocketchip, testchipip)
 
-  def irisSrc = Task.Source(moduleDir / "iris" / "src")
-  override def sources = Task { super.sources() :+ irisSrc() }
-
-  def irisResources = Task.Source(moduleDir / "iris" / "resources")
-  override def resources = Task { super.resources() :+ irisResources() }
-
   def mvnDeps = Seq(
     mvn"org.chipsalliance::chisel:${chiselVersion}",
     mvn"edu.berkeley.cs::cde:0.0.1",

@@ -164,8 +164,6 @@ script -f -c "./simulation +permissive +dramsim +dramsim_ini_dir=${dramsim_ini.t
       incDirs = os.walk(sourceDir).filter(os.isDir) ++ Seq(sourceDir)
     )
 
-    println(s"Done (temp)")
-
     os.proc(
       "/bin/bash",
       simScript
