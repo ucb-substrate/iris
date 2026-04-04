@@ -10,3 +10,6 @@
 [submodule "testchipip"]
 	path = testchipip
 	url = git@github.com:ucb-bar/testchipip.git
+[submodule "DRAMSim2"]
+	path = DRAMSim2
+	url = git@github.com:firesim/DRAMSim2.git
