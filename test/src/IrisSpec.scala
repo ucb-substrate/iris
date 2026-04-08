@@ -11,24 +11,18 @@ import org.chipsalliance.diplomacy._
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.prci._
-import svsim.verilator.Backend.CompilationSettings
-import svsim.Workspace.getProjectRootOrCwd
 import _root_.circt.stage.ChiselStage
 import testchipip.uart.UARTAdapter
 import freechips.rocketchip.jtag.JTAGIO
 import freechips.rocketchip.util._
 import freechips.rocketchip.devices.debug.SimJTAG
 import edu.berkeley.cs.chippy.{SimTSI, TSIIO}
-// import testchipip.tsi._
 import testchipip.dram._
 import testchipip.tsi.SerialRAM
+import testchipip.dram.FastRAM
 import edu.berkeley.cs.chippy.{SimTSI, TSIIO => ChippyTSIIO}
 import testchipip.serdes.{SerialTLKey, CreditedSourceSyncPhitIO}
 import testchipip.soc.ChipletRoutingKey
-import chisel3.simulator.stimulus.RunUntilSuccess
-import chisel3.testing.HasTestingDirectory
-import java.nio.file.Paths
-import os.RelPath
 import os.Path
 import chisel3.experimental.dataview._
 
@@ -64,11 +58,11 @@ class ClockSourceAtFreqMHz(val freqMHz: Double)
   )
 }
 
-class SimTop(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: Seq[String] = Seq.empty, chip1PlusArgs: Seq[String] = Seq.empty)(implicit
+class SimTop(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: Seq[String] = Seq.empty, chip1PlusArgs: Seq[String] = Seq.empty, fast: Boolean = false)(implicit
     p: Parameters
 ) extends RawModule {
   val driver = Module(new TestDriver)
-  val harness = Module(new TestHarness(chip0BinaryPath, chip1BinaryPath, chip0PlusArgs, chip1PlusArgs))
+  val harness = Module(new TestHarness(chip0BinaryPath, chip1BinaryPath, chip0PlusArgs, chip1PlusArgs, fast))
   harness.io.reset := driver.reset
   driver.success := harness.io.success
 }
@@ -101,12 +95,7 @@ class TestDriver extends ExtModule {
   )
 }
 
-class TestHarnessIO extends Bundle {
-  val success = Output(Bool())
-  val reset = Input(Bool())
-}
-
-class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: Seq[String] = Seq.empty, chip1PlusArgs: Seq[String] = Seq.empty)(implicit
+class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: Seq[String] = Seq.empty, chip1PlusArgs: Seq[String] = Seq.empty, fast: Boolean = false)(implicit
     p: Parameters
 ) extends RawModule {
   val io = IO(new Bundle {
@@ -130,7 +119,9 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: S
       _.out -> _.out
     )
 
-  def connectChip(binaryPath: Path, plusArgs: Seq[String]): CreditedSourceSyncPhitIO = {
+  def connectChip(binaryPath: Path, plusArgs: Seq[String], chipId: Int): CreditedSourceSyncPhitIO = {
+    val allPlusArgs = if (fast) plusArgs :+ s"+loadmem=${binaryPath.toString}" else plusArgs
+
     val chiptop_lazy = LazyModule(new IrisTop)
     val chiptop = Module(chiptop_lazy.module)
     chiptop.io.clock := digitalClock
@@ -158,24 +149,22 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: S
     )
 
     chiptop.serial_tl.clock_in := digitalClock
-    val ram = Module(
-      LazyModule(
-        new SerialRAM(chiptop_lazy.system.serdessers(0), p(SerialTLKey)(0))(
-          chiptop_lazy.system.serdessers(0).p
-        )
-      ).module
-    )
-    ram.io.ser.in <> chiptop.serial_tl.out
-    chiptop.serial_tl.in <> ram.io.ser.out
 
-    val success =
-      SimTSI.connect(
-        ram.io.tsi.map(_.viewAs[TSIIO]),
-        digitalClock,
-        io.reset,
-        binaryPath,
-        plusArgs
-      )
+    val success = if (fast) {
+      val ram = Module(LazyModule(new FastRAM(chiptop_lazy.system.serdessers(0), p(SerialTLKey)(0), chipId = chipId)(
+        chiptop_lazy.system.serdessers(0).p
+      )).module)
+      ram.io.ser.in <> chiptop.serial_tl.out
+      chiptop.serial_tl.in <> ram.io.ser.out
+      SimTSI.connect(ram.io.tsi.map(_.viewAs[TSIIO]), digitalClock, io.reset, binaryPath, allPlusArgs)
+    } else {
+      val ram = Module(LazyModule(new SerialRAM(chiptop_lazy.system.serdessers(0), p(SerialTLKey)(0))(
+        chiptop_lazy.system.serdessers(0).p
+      )).module)
+      ram.io.ser.in <> chiptop.serial_tl.out
+      chiptop.serial_tl.in <> ram.io.ser.out
+      SimTSI.connect(ram.io.tsi.map(_.viewAs[TSIIO]), digitalClock, io.reset, binaryPath, allPlusArgs)
+    }
     when(success) { io.success := true.B }
 
     chiptop.c2c_serial_tl
@@ -183,8 +172,8 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: S
 
   withClockAndReset(digitalClock, io.reset) {
     io.success := false.B
-    val c2c0 = connectChip(chip0BinaryPath, chip0PlusArgs)
-    val c2c1 = connectChip(chip1BinaryPath, chip1PlusArgs)
+    val c2c0 = connectChip(chip0BinaryPath, chip0PlusArgs, chipId = 0)
+    val c2c1 = connectChip(chip1BinaryPath, chip1PlusArgs, chipId = 1)
     c2c0.connect(c2c1)
   }
 }
@@ -211,7 +200,6 @@ class IrisSpec extends AnyFunSpec {
       implicit val p = new IrisConfig(sim = true)
       val workDir = Utils.buildRoot / "Iris_should_run_hello_riscv"
 
-      // TODO: Figure out why this passes even when simulation errors.
       Utils.simulateTopWithBinaries(
         workDir,
         Utils.root / "software/hello0.riscv",
@@ -239,6 +227,42 @@ class IrisSpec extends AnyFunSpec {
         Utils.root / "software/router.riscv",
         chip0PlusArgs,
         chip1PlusArgs
+      )
+    }
+
+    it("should run hello.riscv with FastRAM") {
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_hello_riscv_fast"
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        chip0BinaryPath = Utils.root / "software/hello0.riscv",
+        chip1BinaryPath = Utils.root / "software/hello0.riscv",
+        fast = true
+      )
+    }
+
+    it("should run router tests fast") {
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_router_test_fast"
+
+      val chipid0 = 1
+      val chipid1 = 2
+      val chipidReg = p(ChipletRoutingKey).get.routerParams.tableAddress + p(ChipletRoutingKey).get.routerParams.tableEntries * 32
+      val chip0PlusArgs = Seq(
+        f"+init_write=0x${chipidReg}%08x:0x${chipid0}%08x",
+      )
+      val chip1PlusArgs = Seq(
+        f"+init_write=0x${chipidReg}%08x:0x${chipid1}%08x"
+      )
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        Utils.root / "software/router.riscv",
+        Utils.root / "software/router.riscv",
+        chip0PlusArgs,
+        chip1PlusArgs,
+        fast = true
       )
     }
   }
