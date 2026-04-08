@@ -22,7 +22,11 @@ import testchipip.tsi.SerialRAM
 import testchipip.dram.FastRAM
 import edu.berkeley.cs.chippy.{SimTSI, TSIIO => ChippyTSIIO}
 import testchipip.serdes.{SerialTLKey, CreditedSourceSyncPhitIO}
-import testchipip.soc.ChipletRoutingKey
+import testchipip.soc.{ChipletIO, ChipletRoutingKey}
+import chisel3.simulator.stimulus.RunUntilSuccess
+import chisel3.testing.HasTestingDirectory
+import java.nio.file.Paths
+import os.RelPath
 import os.Path
 import chisel3.experimental.dataview._
 
@@ -119,7 +123,7 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: S
       _.out -> _.out
     )
 
-  def connectChip(binaryPath: Path, plusArgs: Seq[String], chipId: Int): CreditedSourceSyncPhitIO = {
+  def connectChip(binaryPath: Path, plusArgs: Seq[String], chipId: Int): Seq[ChipletIO] = {
     val allPlusArgs = if (fast) plusArgs :+ s"+loadmem=${binaryPath.toString}" else plusArgs
 
     val chiptop_lazy = LazyModule(new IrisTop)
@@ -167,14 +171,22 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: S
     }
     when(success) { io.success := true.B }
 
-    chiptop.c2c_serial_tl
+    // Tie off clocks for now
+    chiptop.c2c_ucie.phy.refClkP := DontCare
+    chiptop.c2c_ucie.phy.refClkN := DontCare
+    chiptop.c2c_ucie.phy.bypassClkP := DontCare
+    chiptop.c2c_ucie.phy.bypassClkN := DontCare
+    chiptop.c2c_ucie.phy.digitalBypassClk := DontCare
+    chiptop.c2c_ucie.phy.pllRdacVref := DontCare
+
+    Seq(chiptop.c2c_serial_tl, chiptop.c2c_ucie)
   }
 
   withClockAndReset(digitalClock, io.reset) {
     io.success := false.B
     val c2c0 = connectChip(chip0BinaryPath, chip0PlusArgs, chipId = 0)
     val c2c1 = connectChip(chip1BinaryPath, chip1PlusArgs, chipId = 1)
-    c2c0.connect(c2c1)
+    c2c0.zip(c2c1).foreach { case (io0, io1) => io0.connect(io1) }
   }
 }
 

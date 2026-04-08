@@ -117,6 +117,10 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
     // Connect D2D SerialTL
     val c2c_serial_tl = IO(new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth))
     c2c_serial_tl <> system.d2d_port_ios.get(0)
+
+    // Connect D2D UCIe
+    val c2c_ucie = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(p(ChipletRoutingKey).get.ports(1).asInstanceOf[edu.berkeley.cs.uciedigital.tilelink.UcieTLParams].numLanes))
+    c2c_ucie <> system.d2d_port_ios.get(1)
   }
 }
 
@@ -137,7 +141,8 @@ class IrisConfig(sim: Boolean = false)
               "Core 1 ICache" -> 1, // Shuttle 1 (right)
               "debug[0]" -> 2, // Front BUS
               "Core 2 DCache" -> 4, // RocketTile
-              "d2d_serial_tl" -> 5 // D2D SerialTL
+              "d2d_serial_tl" -> 5, // D2D SerialTL
+              "ucie-client" -> 5
             ),
             outNodeMapping = ListMap(
               "Core 0 TCM" -> 0, // Shuttle 0 TCM (left)
@@ -239,15 +244,23 @@ class IrisConfig(sim: Boolean = false)
 
         new testchipip.soc.WithMaxOffchipAddressRange(AddressSet.misaligned(0x800000000L, 0x1000000000L)) ++
 
-        // Chiplet Router with D2D SerialTL
+        // Chiplet Router with D2D SerialTL and *ONE* D2D UCIe
         new testchipip.soc.WithChipletRouting(testchipip.soc.ChipletRoutingParams(
           routerParams = testchipip.soc.OffchipRouterParams(tableEntries = 4),
-          ports = Seq(testchipip.serdes.SerialTLParams(
-            client = Some(testchipip.serdes.SerialTLClientParams(masterWhere = SBUS)),
-            manager = Some(testchipip.serdes.SerialTLManagerParams()),
-            phyParams = testchipip.serdes.CreditedSourceSyncSerialPhyParams(),
-            bundleParams = testchipip.serdes.TLSerdesser.STANDARD_TLBUNDLE_PARAMS.copy(dataBits = 256) // Temp hack
-        )))) ++
+          ports = Seq(
+            testchipip.serdes.SerialTLParams(
+              client = Some(testchipip.serdes.SerialTLClientParams(masterWhere = SBUS)),
+              manager = Some(testchipip.serdes.SerialTLManagerParams()),
+              phyParams = testchipip.serdes.CreditedSourceSyncSerialPhyParams(),
+              bundleParams = testchipip.serdes.TLSerdesser.STANDARD_TLBUNDLE_PARAMS.copy(dataBits = 256) // Temp hack
+            ),
+            edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
+              address = 0x8000,
+              managerWhere = SBUS,
+              numLanes = 16,
+              includeDefaultModels = true
+            )
+        ))) ++
 
         // 1 serial tilelink port
         new testchipip.serdes.WithSerialTL(
