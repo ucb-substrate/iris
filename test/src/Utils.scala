@@ -65,9 +65,6 @@ script -f -c "./simulation </dev/null 2> >(spike-dasm > simulation.out)" simulat
       incDirs: Seq[Path] = Seq.empty,
       loadmem: Option[Path] = None
   ) = {
-    // val dramsim_ini =
-    //   getClass.getResource("/dramsim2_ini").getPath
-    // FIXME: nono hardcode
     val dramsim_ini = root / "testchipip" / "src" / "main" / "resources" / "dramsim2_ini"
     os.makeDir.all(path / os.up)
     os.write.over(
