@@ -12,8 +12,8 @@ First, install Chippy:
 
 ```bash
 git clone https://github.com/ucb-substrate/chippy.git
-git submodule update --init --recursive
 cd chippy
+git submodule update --init --recursive
 ./mill __.publishLocal
 cd ..
 ```
