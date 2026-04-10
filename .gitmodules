@@ -13,3 +13,6 @@
 [submodule "DRAMSim2"]
 	path = DRAMSim2
 	url = git@github.com:firesim/DRAMSim2.git
+[submodule "ucie"]
+	path = ucie
+	url = git@github.com:ucb-bar/ucie.git
