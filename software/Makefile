@@ -24,7 +24,7 @@ CFLAGS  = -std=gnu99 -O2 -fno-common -fno-builtin-printf -Wall -specs=htif_nano.
 CFLAGS += $(ARCHFLAGS)
 LDFLAGS = -specs=htif_nano.specs
 
-PROGRAMS = hello0 hello1 router
+PROGRAMS = hello hello0 hello1 router
 
 .DEFAULT_GOAL := default
 

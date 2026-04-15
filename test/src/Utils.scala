@@ -72,7 +72,7 @@ script -f -c "./simulation </dev/null 2> >(spike-dasm > simulation.out)" simulat
       s"""#!/bin/bash
 set -ex -o pipefail
 vcs \\
-  -full64\\
+  -full64 -j16 -fgp \\
   -CFLAGS "$$CXXFLAGS -O3 -std=c++17 -I$$RISCV/include -I${root.toString}/DRAMSim2" \\
   -LDFLAGS "$$LDFLAGS -L$$RISCV/lib -Wl,-rpath,$$RISCV/lib" \\
   -lriscv -lfesvr -ldramsim \\
@@ -86,7 +86,7 @@ vcs \\
   +define+layer$$Verification$$Cover$$Temporal \\
   +define+VCS +define+FSDB +define+RANDOMIZE_MEM_INIT +define+RANDOMIZE_REG_INIT +define+RANDOMIZE_GARBAGE_ASSIGN +define+RANDOMIZE_INVALID_ASSIGN \\
   -o simulation -Mdir=vcs-sources
-script -f -c "./simulation +permissive +dramsim +dramsim_ini_dir=${dramsim_ini.toString}${loadmem.map(p => s" +loadmem=${p.toString}").getOrElse("")} +permissive-off placeholder-binary </dev/null 2> >(spike-dasm > simulation.out)" simulation.log
+script -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_dir=${dramsim_ini.toString}${loadmem.map(p => s" +loadmem=${p.toString}").getOrElse("")} +permissive-off placeholder-binary </dev/null 2> >(spike-dasm > simulation.out)" simulation.log
 """
     )
     path.toIO.setExecutable(true)
@@ -107,24 +107,17 @@ script -f -c "./simulation +permissive +dramsim +dramsim_ini_dir=${dramsim_ini.t
 
   def simulateTopWithBinaries(
       workDir: Path,
-      chip0BinaryPath: Path,
-      chip1BinaryPath: Path,
-      chip0PlusArgs: Seq[String] = Seq.empty,
-      chip1PlusArgs: Seq[String] = Seq.empty,
+      nChips: Int,
+      binaryPaths: Seq[Path],
+      plusArgs: Seq[Seq[String]] = Seq.empty,
       fast: Boolean = false
   )(implicit p: Parameters) = {
-    assert(
-      os.exists(chip0BinaryPath),
-      "The provided chip0 binary does not exit. You may have to run `make` in the `software/` directory to make the binary first"
-    )
-    assert(
-      os.exists(chip1BinaryPath),
-      "The provided chip1 binary does not exit. You may have to run `make` in the `software/` directory to make the binary first"
-    )
-    assert(
-      !fast || chip0BinaryPath == chip1BinaryPath,
-      "FastRAM uses +loadmem which loads a single binary into all SimDRAM instances. Both chips must use the same binary when fast is enabled."
-    )
+    binaryPaths.zipWithIndex.foreach { case (path, i) =>
+      assert(
+        os.exists(path),
+        s"The provided chip $i binary ($path) does not exist. You may have to run `make` in the `software/` directory to make the binary first"
+      )
+    }
 
     os.makeDir.all(workDir)
 
@@ -136,7 +129,7 @@ script -f -c "./simulation +permissive +dramsim +dramsim_ini_dir=${dramsim_ini.t
     os.makeDir.all(artifactsDir)
 
     ChiselStage.emitSystemVerilogFile(
-      new SimTop(chip0BinaryPath, chip1BinaryPath, chip0PlusArgs, chip1PlusArgs, fast),
+      new SimTop(nChips, binaryPaths, plusArgs, fast),
       args = Array(
         "--target-dir",
         sourceDir.toString
@@ -157,7 +150,7 @@ script -f -c "./simulation +permissive +dramsim +dramsim_ini_dir=${dramsim_ini.t
       "SimTop",
       sourceFilesList,
       incDirs = os.walk(sourceDir).filter(os.isDir) ++ Seq(sourceDir),
-      loadmem = if (fast) Some(chip0BinaryPath) else None
+      loadmem = if (fast) Some(binaryPaths(0)) else None
     )
 
     os.proc(
