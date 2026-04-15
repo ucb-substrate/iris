@@ -63,9 +63,12 @@ script -f -c "./simulation </dev/null 2> >(spike-dasm > simulation.out)" simulat
       topModule: String,
       sourceFilesList: Path,
       incDirs: Seq[Path] = Seq.empty,
-      loadmem: Option[Path] = None
+      loadmem: Option[Path] = None,
+      debug: Boolean = false
   ) = {
     val dramsim_ini = root / "testchipip" / "src" / "main" / "resources" / "dramsim2_ini"
+    val debugCompileFlags = if (debug) " +define+DEBUG -debug_access+all -kdb -lca" else ""
+    val debugRuntimeFlag = if (debug) " +fsdbfile=waveform.fsdb" else ""
     os.makeDir.all(path / os.up)
     os.write.over(
       path,
@@ -84,9 +87,9 @@ vcs \\
   +define+layer$$Verification$$Assert$$Temporal \\
   +define+layer$$Verification$$Assume$$Temporal \\
   +define+layer$$Verification$$Cover$$Temporal \\
-  +define+VCS +define+FSDB +define+RANDOMIZE_MEM_INIT +define+RANDOMIZE_REG_INIT +define+RANDOMIZE_GARBAGE_ASSIGN +define+RANDOMIZE_INVALID_ASSIGN \\
+  +define+VCS +define+FSDB +define+RANDOMIZE_MEM_INIT +define+RANDOMIZE_REG_INIT +define+RANDOMIZE_GARBAGE_ASSIGN +define+RANDOMIZE_INVALID_ASSIGN$debugCompileFlags \\
   -o simulation -Mdir=vcs-sources
-script -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_dir=${dramsim_ini.toString}${loadmem.map(p => s" +loadmem=${p.toString}").getOrElse("")} +permissive-off placeholder-binary </dev/null 2> >(spike-dasm > simulation.out)" simulation.log
+script -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_dir=${dramsim_ini.toString}${loadmem.map(p => s" +loadmem=${p.toString}").getOrElse("")}$debugRuntimeFlag +permissive-off placeholder-binary </dev/null 2> >(spike-dasm > simulation.out)" simulation.log
 """
     )
     path.toIO.setExecutable(true)
@@ -110,7 +113,8 @@ script -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_dir=
       nChips: Int,
       binaryPaths: Seq[Path],
       plusArgs: Seq[Seq[String]] = Seq.empty,
-      fast: Boolean = false
+      fast: Boolean = false,
+      debug: Boolean = false
   )(implicit p: Parameters) = {
     binaryPaths.zipWithIndex.foreach { case (path, i) =>
       assert(
@@ -150,7 +154,8 @@ script -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_dir=
       "SimTop",
       sourceFilesList,
       incDirs = os.walk(sourceDir).filter(os.isDir) ++ Seq(sourceDir),
-      loadmem = if (fast) Some(binaryPaths(0)) else None
+      loadmem = if (fast) Some(binaryPaths(0)) else None,
+      debug = debug
     )
 
     os.proc(

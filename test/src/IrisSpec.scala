@@ -62,11 +62,11 @@ class ClockSourceAtFreqMHz(val freqMHz: Double)
   )
 }
 
-class SimTop(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: Seq[String] = Seq.empty, chip1PlusArgs: Seq[String] = Seq.empty, fast: Boolean = false)(implicit
+class SimTop(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]] = Seq.empty, fast: Boolean = false)(implicit
     p: Parameters
 ) extends RawModule {
   val driver = Module(new TestDriver)
-  val harness = Module(new TestHarness(chip0BinaryPath, chip1BinaryPath, chip0PlusArgs, chip1PlusArgs, fast))
+  val harness = Module(new TestHarness(nChips, binaryPaths, plusArgs, fast))
   harness.io.reset := driver.reset
   driver.success := harness.io.success
 }
@@ -80,7 +80,21 @@ class TestDriver extends ExtModule {
       | input success,
       | output reg reset
       |);
+      |`ifdef DEBUG
+      | reg [2047:0] fsdbfile = 0;
+      |`endif
       | initial begin
+      |`ifdef DEBUG
+      |   if ($value$plusargs("fsdbfile=%s", fsdbfile)) begin
+      |`ifdef FSDB
+      |     $fsdbDumpfile(fsdbfile);
+      |     $fsdbDumpvars(0, SimTop, "+all");
+      |`else
+      |     $fdisplay(32'h80000002, "Error: +fsdbfile passed but compile did not enable +define+FSDB");
+      |     $fatal;
+      |`endif
+      |   end
+      |`endif
       |   $display("Resetting chip for 10 ns");
       |   reset = 1'b1;
       |   #10;
@@ -92,6 +106,11 @@ class TestDriver extends ExtModule {
       | end
       | always @(posedge success) begin
       |   $display("Test completed successfully.");
+      |`ifdef DEBUG
+      |`ifdef FSDB
+      |   $fsdbDumpoff;
+      |`endif
+      |`endif
       |   $finish;
       | end
       |endmodule
@@ -99,9 +118,22 @@ class TestDriver extends ExtModule {
   )
 }
 
-class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: Seq[String] = Seq.empty, chip1PlusArgs: Seq[String] = Seq.empty, fast: Boolean = false)(implicit
+class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]] = Seq.empty, fast: Boolean = false)(implicit
     p: Parameters
 ) extends RawModule {
+  require(nChips >= 1, s"nChips must be at least 1, got $nChips")
+  if (fast) {
+    require(binaryPaths.length == 1,
+      s"When fast is enabled only 1 binary is needed (loaded into all chips via FastRAM +loadmem), got ${binaryPaths.length}")
+  } else {
+    require(binaryPaths.length == nChips,
+      s"Number of binaries (${binaryPaths.length}) must match nChips ($nChips)")
+  }
+  val perChipPlusArgs =
+    if (plusArgs.isEmpty) Seq.fill(nChips)(Seq.empty[String]) else plusArgs
+  require(perChipPlusArgs.length == nChips,
+    s"Number of plusArgs entries (${perChipPlusArgs.length}) must match nChips ($nChips)")
+
   val io = IO(new Bundle {
     val success = Output(Bool())
     val reset = Input(Bool())
@@ -123,6 +155,8 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: S
       _.out -> _.out
     )
 
+  val chipSuccesses = WireInit(VecInit(Seq.fill(nChips)(false.B)))
+
   def connectChip(binaryPath: Path, plusArgs: Seq[String], chipId: Int): Seq[ChipletIO] = {
     val allPlusArgs = if (fast) plusArgs :+ s"+loadmem=${binaryPath.toString}" else plusArgs
 
@@ -136,7 +170,6 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: S
     UARTAdapter.connect(Seq(chiptop.uart), div, false)
 
     val dtm_success = WireInit(false.B)
-    when(dtm_success) { io.success := true.B }
     val jtag_wire = Wire(new JTAGIO)
     jtag_wire.TDO.data := chiptop.jtag.TDO
     jtag_wire.TDO.driven := true.B
@@ -169,24 +202,43 @@ class TestHarness(chip0BinaryPath: Path, chip1BinaryPath: Path, chip0PlusArgs: S
       chiptop.serial_tl.in <> ram.io.ser.out
       SimTSI.connect(ram.io.tsi.map(_.viewAs[TSIIO]), digitalClock, io.reset, binaryPath, allPlusArgs)
     }
-    when(success) { io.success := true.B }
+    val chipSuccessReg = RegInit(false.B)
+    when(dtm_success || success) { chipSuccessReg := true.B }
+    chipSuccesses(chipId) := chipSuccessReg
 
     // Tie off clocks for now
-    chiptop.c2c_ucie.phy.refClkP := DontCare
-    chiptop.c2c_ucie.phy.refClkN := DontCare
-    chiptop.c2c_ucie.phy.bypassClkP := DontCare
-    chiptop.c2c_ucie.phy.bypassClkN := DontCare
-    chiptop.c2c_ucie.phy.digitalBypassClk := DontCare
-    chiptop.c2c_ucie.phy.pllRdacVref := DontCare
+    Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1).foreach { ucie =>
+      ucie.phy.refClkP := DontCare
+      ucie.phy.refClkN := DontCare
+      ucie.phy.bypassClkP := DontCare
+      ucie.phy.bypassClkN := DontCare
+      ucie.phy.digitalBypassClk := DontCare
+      ucie.phy.pllRdacVref := DontCare
+    }
 
-    Seq(chiptop.c2c_serial_tl, chiptop.c2c_ucie)
+    Seq(chiptop.c2c_serial_tl0, chiptop.c2c_serial_tl1, chiptop.c2c_ucie0, chiptop.c2c_ucie1)
   }
 
   withClockAndReset(digitalClock, io.reset) {
-    io.success := false.B
-    val c2c0 = connectChip(chip0BinaryPath, chip0PlusArgs, chipId = 0)
-    val c2c1 = connectChip(chip1BinaryPath, chip1PlusArgs, chipId = 1)
-    c2c0.zip(c2c1).foreach { case (io0, io1) => io0.connect(io1) }
+    val chips = (0 until nChips).map { i =>
+      val binaryIdx = if (fast) 0 else i
+      connectChip(binaryPaths(binaryIdx), perChipPlusArgs(i), chipId = i)
+    }
+    // Each chip has 4 ports: [sertl0, sertl1, ucie0, ucie1]
+    // Ring link from chip i to chip i+1 connects side 1 of chip i to side 0 of chip i+1:
+    //   sertl1(i) <-> sertl0(i+1), ucie1(i) <-> ucie0(i+1)
+    def connectRingLink(a: Seq[ChipletIO], b: Seq[ChipletIO]): Unit = {
+      a(1).connect(b(0))  // sertl1 <-> sertl0
+      a(3).connect(b(2))  // ucie1  <-> ucie0
+    }
+    if (nChips == 1) {
+      chips(0).foreach(_.loopback)
+    } else {
+      for (i <- 0 until nChips) {
+        connectRingLink(chips(i), chips((i + 1) % nChips))
+      }
+    }
+    io.success := chipSuccesses.reduce(_ && _)
   }
 }
 
@@ -214,8 +266,11 @@ class IrisSpec extends AnyFunSpec {
 
       Utils.simulateTopWithBinaries(
         workDir,
-        Utils.root / "software/hello0.riscv",
-        Utils.root / "software/hello1.riscv",
+        nChips = 2,
+        binaryPaths = Seq(
+          Utils.root / "software/hello0.riscv",
+          Utils.root / "software/hello1.riscv",
+        )
       )
     }
 
@@ -235,10 +290,12 @@ class IrisSpec extends AnyFunSpec {
 
       Utils.simulateTopWithBinaries(
         workDir,
-        Utils.root / "software/router.riscv",
-        Utils.root / "software/router.riscv",
-        chip0PlusArgs,
-        chip1PlusArgs
+        nChips = 2,
+        binaryPaths = Seq(
+          Utils.root / "software/router.riscv",
+          Utils.root / "software/router.riscv",
+        ),
+        plusArgs = Seq(chip0PlusArgs, chip1PlusArgs)
       )
     }
 
@@ -248,9 +305,48 @@ class IrisSpec extends AnyFunSpec {
 
       Utils.simulateTopWithBinaries(
         workDir,
-        chip0BinaryPath = Utils.root / "software/hello0.riscv",
-        chip1BinaryPath = Utils.root / "software/hello0.riscv",
+        nChips = 2,
+        binaryPaths = Seq(Utils.root / "software/hello0.riscv"),
         fast = true
+      )
+    }
+
+    it("should run four chip test") {
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_four_chip_test"
+
+      val nChips = 4
+      val chipidReg = p(ChipletRoutingKey).get.routerParams.tableAddress + p(ChipletRoutingKey).get.routerParams.tableEntries * 32
+      val plusArgs = (1 to nChips).map { chipId =>
+        Seq(f"+init_write=0x${chipidReg}%08x:0x${chipId}%08x")
+      }
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = nChips,
+        binaryPaths = Seq(Utils.root / "software/hello.riscv"),
+        plusArgs = plusArgs,
+        fast = true
+      )
+    }
+
+    it("should run ring test") {
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_ring_test"
+
+      val nChips = 4
+      val chipidReg = p(ChipletRoutingKey).get.routerParams.tableAddress + p(ChipletRoutingKey).get.routerParams.tableEntries * 32
+      val plusArgs = (1 to nChips).map { chipId =>
+        Seq(f"+init_write=0x${chipidReg}%08x:0x${chipId}%08x")
+      }
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = nChips,
+        binaryPaths = Seq(Utils.root / "software/ring-hello.riscv"),
+        plusArgs = plusArgs,
+        fast = true,
+        debug = true
       )
     }
 
@@ -270,10 +366,9 @@ class IrisSpec extends AnyFunSpec {
 
       Utils.simulateTopWithBinaries(
         workDir,
-        Utils.root / "software/router.riscv",
-        Utils.root / "software/router.riscv",
-        chip0PlusArgs,
-        chip1PlusArgs,
+        nChips = 2,
+        binaryPaths = Seq(Utils.root / "software/router.riscv"),
+        plusArgs = Seq(chip0PlusArgs, chip1PlusArgs),
         fast = true
       )
     }

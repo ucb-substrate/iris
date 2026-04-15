@@ -115,12 +115,16 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
     uart <> system.uart(0)
 
     // Connect D2D SerialTL
-    val c2c_serial_tl = IO(new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth))
-    c2c_serial_tl <> system.d2d_port_ios.get(0)
+    val c2c_serial_tl0 = IO(new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth))
+    val c2c_serial_tl1 = IO(new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(1).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth))
+    c2c_serial_tl0 <> system.d2d_port_ios.get(0)
+    c2c_serial_tl1 <> system.d2d_port_ios.get(1)
 
     // Connect D2D UCIe
-    val c2c_ucie = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(p(ChipletRoutingKey).get.ports(1).asInstanceOf[edu.berkeley.cs.uciedigital.tilelink.UcieTLParams].numLanes))
-    c2c_ucie <> system.d2d_port_ios.get(1)
+    val c2c_ucie0 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(p(ChipletRoutingKey).get.ports(2).asInstanceOf[edu.berkeley.cs.uciedigital.tilelink.UcieTLParams].numLanes))
+    val c2c_ucie1 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(p(ChipletRoutingKey).get.ports(3).asInstanceOf[edu.berkeley.cs.uciedigital.tilelink.UcieTLParams].numLanes))
+    c2c_ucie0 <> system.d2d_port_ios.get(2)
+    c2c_ucie1 <> system.d2d_port_ios.get(3)
   }
 }
 
@@ -242,9 +246,9 @@ class IrisConfig(sim: Boolean = false)
         new shuttle.common.WithL1DCacheTagBanks(1) ++
         new shuttle.common.WithNShuttleCores(2) ++
 
-        new testchipip.soc.WithMaxOffchipAddressRange(AddressSet.misaligned(0x800000000L, 0x1000000000L)) ++
+        new testchipip.soc.WithMaxOffchipAddressRange(AddressSet.misaligned(0x800000000L, 0x2000000000L)) ++
 
-        // Chiplet Router with D2D SerialTL and *ONE* D2D UCIe
+        // Chiplet Router with two D2D SerialTL ports and two D2D UCIe ports
         new testchipip.soc.WithChipletRouting(testchipip.soc.ChipletRoutingParams(
           routerParams = testchipip.soc.OffchipRouterParams(tableEntries = 4),
           ports = Seq(
@@ -254,8 +258,20 @@ class IrisConfig(sim: Boolean = false)
               phyParams = testchipip.serdes.CreditedSourceSyncSerialPhyParams(),
               bundleParams = testchipip.serdes.TLSerdesser.STANDARD_TLBUNDLE_PARAMS.copy(dataBits = 256) // Temp hack
             ),
+            testchipip.serdes.SerialTLParams(
+              client = Some(testchipip.serdes.SerialTLClientParams(masterWhere = SBUS)),
+              manager = Some(testchipip.serdes.SerialTLManagerParams()),
+              phyParams = testchipip.serdes.CreditedSourceSyncSerialPhyParams(),
+              bundleParams = testchipip.serdes.TLSerdesser.STANDARD_TLBUNDLE_PARAMS.copy(dataBits = 256) // Temp hack
+            ),
             edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x8000,
+              managerWhere = SBUS,
+              numLanes = 16,
+              includeDefaultModels = true
+            ),
+            edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
+              address = 0xc000,
               managerWhere = SBUS,
               numLanes = 16,
               includeDefaultModels = true
