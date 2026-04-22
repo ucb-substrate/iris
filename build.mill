@@ -91,7 +91,7 @@ object `package` extends ChipModule {
     )
   }
 
-    object ucie extends ChipModule {
+  object ucie extends ChipModule {
     def moduleDir = super.moduleDir / os.up / "ucie" / "scala"
 
     def moduleDeps = Seq(testchipip, rocketchip)
