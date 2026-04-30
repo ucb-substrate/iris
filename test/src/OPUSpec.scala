@@ -11,7 +11,11 @@ class OPUSpec extends AnyFunSpec {
       implicit val p = new OPUV128D64IrisConfig
       ChiselStage.emitSystemVerilogFile(
         LazyModule(new OPUTop).module,
-        args = Array("--target-dir", targetDir.toString())
+        args = Array("--target-dir", targetDir.toString()),
+        firtoolOpts = Array(
+          "--repl-seq-mem",
+          s"--repl-seq-mem-file=${targetDir / "OPU.mems.conf"}"
+        )
       )
       freechips.rocketchip.util.ElaborationArtefacts.files.foreach { case (extension, contents) =>
         os.write.over(targetDir / s"OPUV128D64.${extension}", contents())
@@ -23,7 +27,11 @@ class OPUSpec extends AnyFunSpec {
       implicit val p = new OPUV512D256IrisConfig
       ChiselStage.emitSystemVerilogFile(
         LazyModule(new OPUTop).module,
-        args = Array("--target-dir", targetDir.toString())
+        args = Array("--target-dir", targetDir.toString()),
+        firtoolOpts = Array(
+          "--repl-seq-mem",
+          s"--repl-seq-mem-file=${targetDir / "OPU.mems.conf"}"
+        )
       )
       freechips.rocketchip.util.ElaborationArtefacts.files.foreach { case (extension, contents) =>
         os.write.over(targetDir / s"OPUV512D256.${extension}", contents())
