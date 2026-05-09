@@ -105,13 +105,15 @@ class TestDriver extends ExtModule {
       |   $fatal;
       | end
       | always @(posedge success) begin
-      |   $display("Test completed successfully.");
+      |   if (!reset) begin
+      |     $display("Test completed successfully.");
       |`ifdef DEBUG
       |`ifdef FSDB
-      |   $fsdbDumpoff;
+      |     $fsdbDumpoff;
       |`endif
       |`endif
-      |   $finish;
+      |     $finish;
+      |   end
       | end
       |endmodule
     """.stripMargin
@@ -146,6 +148,21 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
   source.io.power := true.B
   source.io.gate := false.B
   digitalClock := source.io.clk
+
+  val ucieBypassFreqMHz = 8000
+  val ucieBypassClock = Wire(Clock())
+  val ucieBypassClockSource = Module(new ClockSourceAtFreqMHz(ucieBypassFreqMHz))
+  ucieBypassClockSource.io.power := true.B
+  ucieBypassClockSource.io.gate := false.B
+  ucieBypassClock := ucieBypassClockSource.io.clk
+
+  val ucieDigitalBypassFreqMHz = 800
+  val ucieDigitalBypassClock = Wire(Clock())
+  val ucieDigitalBypassClockSource = Module(new ClockSourceAtFreqMHz(ucieDigitalBypassFreqMHz))
+  ucieDigitalBypassClockSource.io.power := true.B
+  ucieDigitalBypassClockSource.io.gate := false.B
+  ucieDigitalBypassClock := ucieDigitalBypassClockSource.io.clk
+
 
   implicit def view[A <: Data, B <: Data]
       : DataView[testchipip.tsi.TSIIO, TSIIO] =
@@ -206,14 +223,13 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
     when(dtm_success || success) { chipSuccessReg := true.B }
     chipSuccesses(chipId) := chipSuccessReg
 
-    // Tie off clocks for now
     Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1).foreach { ucie =>
       ucie.phy.refClkP := DontCare
       ucie.phy.refClkN := DontCare
-      ucie.phy.bypassClkP := DontCare
-      ucie.phy.bypassClkN := DontCare
-      ucie.phy.digitalBypassClk := DontCare
-      ucie.phy.pllRdacVref := DontCare
+      ucie.phy.bypassClkP := ucieBypassClock
+      ucie.phy.bypassClkN := (!ucieBypassClock.asBool).asClock
+      ucie.phy.digitalBypassClk := ucieDigitalBypassClock
+      ucie.phy.pllRdacVref := 0.U
     }
 
     Seq(chiptop.c2c_serial_tl0, chiptop.c2c_serial_tl1, chiptop.c2c_ucie0, chiptop.c2c_ucie1)
@@ -370,6 +386,26 @@ class IrisSpec extends AnyFunSpec {
         binaryPaths = Seq(Utils.root / "software/router.riscv"),
         plusArgs = Seq(chip0PlusArgs, chip1PlusArgs),
         fast = true
+      )
+    }
+
+    it("should run ucie loopback test") {
+            implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_ucie_loopback_test"
+
+      val chipid0 = 1
+      val chipidReg = p(ChipletRoutingKey).get.routerParams.tableAddress + p(ChipletRoutingKey).get.routerParams.tableEntries * 32
+      val chip0PlusArgs = Seq(
+        f"+init_write=0x${chipidReg}%08x:0x${chipid0}%08x",
+      )
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "software/ucie-loopback.riscv"),
+        plusArgs = Seq(chip0PlusArgs),
+        fast = true,
+        debug = true
       )
     }
   }
