@@ -260,6 +260,22 @@ class IrisSpec extends AnyFunSpec {
       }
     }
 
+    it("should generate valid System Verilog for TinyIris") {
+      val targetDir = Utils.buildRoot / "TinyIris_should_generate_valid_System_Verilog"
+      implicit val p = new TinyIrisConfig
+      ChiselStage.emitSystemVerilogFile(
+        LazyModule(new TinyIrisTop).module,
+        args = Array(
+          "--target-dir",
+          targetDir.toString()
+        )
+      )
+
+      freechips.rocketchip.util.ElaborationArtefacts.files.foreach { case (extension, contents) =>
+        os.write.over(targetDir / s"Iris.${extension}", contents ())
+      }
+    }
+
     it("should run hello.riscv") {
       implicit val p = new IrisConfig(sim = true)
       val workDir = Utils.buildRoot / "Iris_should_run_hello_riscv"
