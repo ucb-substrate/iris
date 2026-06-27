@@ -297,12 +297,12 @@ class IrisConfig(sim: Boolean = false)
               ),
               // Allow an external manager to probe this chip
               client = Some(testchipip.serdes.SerialTLClientParams()),
-              // 4-bit bidir interface, synced to an external clock
+              // 16-bit bidir interface, synced to an external clock
               phyParams = {
                 val (phitWidth, flitWidth) = if (sim) {
                   (32, 32)
                 } else {
-                  (1, 16)
+                  (16, 16)
                 }
                 testchipip.serdes.DecoupledExternalSyncSerialPhyParams(
                   phitWidth = phitWidth,
