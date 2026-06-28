@@ -24,7 +24,7 @@ CFLAGS  = -std=gnu99 -O2 -fno-common -fno-builtin-printf -Wall -specs=htif_nano.
 CFLAGS += $(ARCHFLAGS)
 LDFLAGS = -specs=htif_nano.specs
 
-PROGRAMS = hello hello0 hello1 router ring-hello
+PROGRAMS = hello hello0 hello1 router ring-hello ucie-loopback
 
 .DEFAULT_GOAL := default
 
