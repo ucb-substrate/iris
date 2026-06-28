@@ -219,7 +219,7 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
       chiptop.serial_tl.in <> ram.io.ser.out
       SimTSI.connect(ram.io.tsi.map(_.viewAs[TSIIO]), digitalClock, io.reset, binaryPath, allPlusArgs)
     }
-    val chipSuccessReg = RegInit(false.B)
+    val chipSuccessReg = withReset(io.reset.asAsyncReset)(RegInit(false.B))
     when(dtm_success || success) { chipSuccessReg := true.B }
     chipSuccesses(chipId) := chipSuccessReg
 
@@ -232,7 +232,7 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
       ucie.phy.pllRdacVref := 0.U
     }
 
-    Seq(chiptop.c2c_serial_tl0, chiptop.c2c_serial_tl1, chiptop.c2c_ucie0, chiptop.c2c_ucie1)
+    Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1)
   }
 
   withClockAndReset(digitalClock, io.reset) {
@@ -240,12 +240,11 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
       val binaryIdx = if (fast) 0 else i
       connectChip(binaryPaths(binaryIdx), perChipPlusArgs(i), chipId = i)
     }
-    // Each chip has 4 ports: [sertl0, sertl1, ucie0, ucie1]
+    // Each chip has 2 ports: [ucie0, ucie1]
     // Ring link from chip i to chip i+1 connects side 1 of chip i to side 0 of chip i+1:
-    //   sertl1(i) <-> sertl0(i+1), ucie1(i) <-> ucie0(i+1)
+    // ucie1(i) <-> ucie0(i+1)
     def connectRingLink(a: Seq[ChipletIO], b: Seq[ChipletIO]): Unit = {
-      a(1).connect(b(0))  // sertl1 <-> sertl0
-      a(3).connect(b(2))  // ucie1  <-> ucie0
+      a(1).connect(b(0))  // ucie1  <-> ucie0
     }
     if (nChips == 1) {
       chips(0).foreach(_.loopback)
@@ -308,10 +307,11 @@ class IrisSpec extends AnyFunSpec {
         workDir,
         nChips = 2,
         binaryPaths = Seq(
-          Utils.root / "software/router.riscv",
-          Utils.root / "software/router.riscv",
+          Utils.root / "software/router.riscv"
         ),
-        plusArgs = Seq(chip0PlusArgs, chip1PlusArgs)
+        plusArgs = Seq(chip0PlusArgs, chip1PlusArgs),
+        debug = true,
+        fast = true
       )
     }
 
@@ -363,29 +363,6 @@ class IrisSpec extends AnyFunSpec {
         plusArgs = plusArgs,
         fast = true,
         debug = true
-      )
-    }
-
-    it("should run router tests fast") {
-      implicit val p = new IrisConfig(sim = true)
-      val workDir = Utils.buildRoot / "Iris_should_run_router_test_fast"
-
-      val chipid0 = 1
-      val chipid1 = 2
-      val chipidReg = p(ChipletRoutingKey).get.routerParams.tableAddress + p(ChipletRoutingKey).get.routerParams.tableEntries * 32
-      val chip0PlusArgs = Seq(
-        f"+init_write=0x${chipidReg}%08x:0x${chipid0}%08x",
-      )
-      val chip1PlusArgs = Seq(
-        f"+init_write=0x${chipidReg}%08x:0x${chipid1}%08x"
-      )
-
-      Utils.simulateTopWithBinaries(
-        workDir,
-        nChips = 2,
-        binaryPaths = Seq(Utils.root / "software/router.riscv"),
-        plusArgs = Seq(chip0PlusArgs, chip1PlusArgs),
-        fast = true
       )
     }
 

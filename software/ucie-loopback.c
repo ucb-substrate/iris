@@ -5,6 +5,7 @@
 #include <riscv-pk/encoding.h>
 #include "marchid.h"
 #include "mmio.h"
+#include "router.h"
 #include "ucie.h"
 
 #define UCIE0_REG_BASE 0x8000UL
@@ -16,13 +17,6 @@
 uint32_t src[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 uint32_t dest[10];
 uint32_t test[10];
-
-void program_router(uint64_t chip_id, uint64_t port, uint64_t table_entry) {
-  uint64_t base = ROUTER_MMIO + table_entry * 32;
-  reg_write64(base + 0,  1);        // valid
-  reg_write64(base + 8,  chip_id);  // chipID
-  reg_write64(base + 16, port);     // port
-}
 
 int rw_mem(uint64_t offset) {
   // remote = dest on the other chip: same local address as our dest, tagged with target chip ID.
@@ -62,12 +56,12 @@ int main(void) {
   printf("Setting up UCIe1\n");
   setup_ucie(UCIE1_REG_BASE);
 
-  printf("Testing UCIe at port 2\n");
-  program_router(1, 2, 0);
+  printf("Testing UCIe at port 0\n");
+  program_router(0, 1, 0);
   rw_mem(OFFCHIP_OFFSET);
   
-  printf("Testing UCIe at port 3\n");
-  program_router(1, 3, 0);
+  printf("Testing UCIe at port 1\n");
+  program_router(0, 1, 1);
   rw_mem(OFFCHIP_OFFSET);
 
   printf("UCIe loopback test complete\n");
