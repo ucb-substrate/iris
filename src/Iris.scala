@@ -114,17 +114,11 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
     val uart = IO(chiselTypeOf(system.uart(0)))
     uart <> system.uart(0)
 
-    // Connect D2D SerialTL
-    val c2c_serial_tl0 = IO(new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth))
-    val c2c_serial_tl1 = IO(new CreditedSourceSyncPhitIO(p(ChipletRoutingKey).get.ports(1).asInstanceOf[testchipip.serdes.SerialTLParams].phyParams.phitWidth))
-    c2c_serial_tl0 <> system.d2d_port_ios.get(0)
-    c2c_serial_tl1 <> system.d2d_port_ios.get(1)
-
     // Connect D2D UCIe
-    val c2c_ucie0 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(p(ChipletRoutingKey).get.ports(2).asInstanceOf[edu.berkeley.cs.uciedigital.tilelink.UcieTLParams].numLanes))
-    val c2c_ucie1 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(p(ChipletRoutingKey).get.ports(3).asInstanceOf[edu.berkeley.cs.uciedigital.tilelink.UcieTLParams].numLanes))
-    c2c_ucie0 <> system.d2d_port_ios.get(2)
-    c2c_ucie1 <> system.d2d_port_ios.get(3)
+    val c2c_ucie0 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[edu.berkeley.cs.uciedigital.tilelink.UcieTLParams].numLanes))
+    val c2c_ucie1 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(p(ChipletRoutingKey).get.ports(1).asInstanceOf[edu.berkeley.cs.uciedigital.tilelink.UcieTLParams].numLanes))
+    c2c_ucie0 <> system.d2d_port_ios.get(0)
+    c2c_ucie1 <> system.d2d_port_ios.get(1)
   }
 }
 
@@ -145,7 +139,6 @@ class IrisConfig(sim: Boolean = false)
               "Core 1 ICache" -> 1, // Shuttle 1 (right)
               "debug[0]" -> 2, // Front BUS
               "Core 2 DCache" -> 4, // RocketTile
-              "d2d_serial_tl" -> 5, // D2D SerialTL
               "ucie-client" -> 5
             ),
             outNodeMapping = ListMap(
@@ -156,7 +149,7 @@ class IrisConfig(sim: Boolean = false)
               "ram[3],serdesser[3]|" -> 3, // L2   (top)
               "ram[1],serdesser[1]|" -> 3, // L2   (bottom)
               "ram[0],serdesser[0]|" -> 3, // L2   (bottom)
-              "d2d_serial_tl" -> 5, // D2D SerialTL
+              "ucie[0]" -> 5, // UCie 0
               "ram[0]|" -> 6, // SBUS SPAD (?)
               "ram[1]|" -> 6 // MBUS SPAD (?)
             )
@@ -252,18 +245,6 @@ class IrisConfig(sim: Boolean = false)
         new testchipip.soc.WithChipletRouting(testchipip.soc.ChipletRoutingParams(
           routerParams = testchipip.soc.OffchipRouterParams(tableEntries = 4),
           ports = Seq(
-            testchipip.serdes.SerialTLParams(
-              client = Some(testchipip.serdes.SerialTLClientParams(masterWhere = SBUS)),
-              manager = Some(testchipip.serdes.SerialTLManagerParams()),
-              phyParams = testchipip.serdes.CreditedSourceSyncSerialPhyParams(),
-              bundleParams = testchipip.serdes.TLSerdesser.STANDARD_TLBUNDLE_PARAMS.copy(dataBits = 256) // Temp hack
-            ),
-            testchipip.serdes.SerialTLParams(
-              client = Some(testchipip.serdes.SerialTLClientParams(masterWhere = SBUS)),
-              manager = Some(testchipip.serdes.SerialTLManagerParams()),
-              phyParams = testchipip.serdes.CreditedSourceSyncSerialPhyParams(),
-              bundleParams = testchipip.serdes.TLSerdesser.STANDARD_TLBUNDLE_PARAMS.copy(dataBits = 256) // Temp hack
-            ),
             edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x8000,
               managerWhere = SBUS,
@@ -297,12 +278,12 @@ class IrisConfig(sim: Boolean = false)
               ),
               // Allow an external manager to probe this chip
               client = Some(testchipip.serdes.SerialTLClientParams()),
-              // 4-bit bidir interface, synced to an external clock
+              // 16-bit bidir interface, synced to an external clock
               phyParams = {
                 val (phitWidth, flitWidth) = if (sim) {
                   (32, 32)
                 } else {
-                  (1, 16)
+                  (16, 16)
                 }
                 testchipip.serdes.DecoupledExternalSyncSerialPhyParams(
                   phitWidth = phitWidth,

@@ -5,25 +5,18 @@
 #include <riscv-pk/encoding.h>
 #include "marchid.h"
 #include "mmio.h"
+#include "router.h"
+#include "ucie.h"
 
-#define ROUTER_MMIO 0x4000
-#define CHIP_ID_ADDR 0x4080
 #define OFFCHIP_OFFSET 0x800000000L
+#define UCIE0_REG_BASE  0x8000UL
+#define UCIE1_REG_BASE  0xc000UL
 
 uint32_t src[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 uint32_t dest[10];
 uint32_t test[10];
 
-void program_router(uint64_t chip_id, uint64_t port, uint64_t table_entry) {
-  uint64_t base = ROUTER_MMIO + table_entry * 32;
-  reg_write64(base + 0,  1);        // valid
-  reg_write64(base + 8,  chip_id);  // chipID
-  reg_write64(base + 16, port);     // port
-}
-
 int rw_mem(uint64_t offset) {
-  // remote = dest on the other chip: same local address as our dest, tagged with target chip ID.
-  // offset = OFFCHIP_OFFSET * target_chipId (a byte offset, added via uint8_t* cast).
   void *remote = (void *)((uint8_t *)dest + offset);
 
   size_t write_start = rdcycle();
@@ -55,11 +48,15 @@ int main(void) {
   printf("Got chip ID: %d\n", chip_id);
 
   if (chip_id == 1) {
-    program_router(2, 0, 0);
+    setup_ucie(UCIE0_REG_BASE);
+    printf("Set up UCIe 0 for chip 1\n");
+    program_router(0, 2, 0); // Chip 1 UCIe0 -> Chip 2 UCIe1
     rw_mem(OFFCHIP_OFFSET * 2);
     printf("Chip 1 DONE\n");
   } else {
-    program_router(1, 0, 0);
+    setup_ucie(UCIE1_REG_BASE);
+    printf("Set up UCIe 1 for chip 2\n");
+    program_router(0, 1, 1); // Chip 2 UCIe1 -> Chip 1 UCIe0
     rw_mem(OFFCHIP_OFFSET * 1);
     printf("Chip 2 DONE\n");
   }
