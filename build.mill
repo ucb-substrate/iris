@@ -6,7 +6,7 @@ import mill._
 import scalalib._
 
 object `package` extends ChipModule {
-  def moduleDeps = Seq(shuttle, saturn, rocketchip, testchipip, ucie)
+  def moduleDeps = Seq(shuttle, saturn, rocketchip, testchipip, ucie, tacit)
 
   def mvnDeps = Seq(
     mvn"org.chipsalliance::chisel:${chiselVersion}",
@@ -90,8 +90,22 @@ object `package` extends ChipModule {
       mvn"org.chipsalliance:::chisel-plugin:${chiselVersion}",
     )
   }
+  object tacit extends ChipModule {
+    def sources = Task.Sources(moduleDir / "src" / "main" / "scala")
 
-    object ucie extends ChipModule {
+    def moduleDeps = Seq(rocketchip, shuttle, testchipip)
+
+    def mvnDeps = Seq(
+      mvn"org.chipsalliance::chisel:${chiselVersion}",
+      mvn"edu.berkeley.cs::cde:0.0.1",
+      mvn"edu.berkeley.cs::diplomacy:0.0.1",
+    )
+    def scalacPluginMvnDeps = Seq(
+      mvn"org.chipsalliance:::chisel-plugin:${chiselVersion}",
+    )
+  }
+
+  object ucie extends ChipModule {
     def moduleDir = super.moduleDir / os.up / "ucie" / "scala"
 
     def moduleDeps = Seq(testchipip, rocketchip)

@@ -435,5 +435,53 @@ class IrisSpec extends AnyFunSpec {
         debug = true
       )
     }
+
+    it("should run tacit always trace workload") {
+      implicit val p = new TinyIrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "TinyIris_should_run_tacit_always_trace"
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "software/tacit-always.riscv"),
+        fast = true
+      )
+    }
+
+    it("should run tacit always trace workload with parallel encoder") {
+      implicit val p = new TinyIrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "TinyIris_should_run_tacit_always_parallel_trace"
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "software/tacit-always.riscv"),
+        fast = true
+      )
+    }
+
+    it("should run tacit dma trace workload") {
+      implicit val p = new TinyIrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "TinyIris_should_run_tacit_dma_trace"
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "software/tacit-dma.riscv"),
+        fast = true
+      )
+    }
+
+    it("should run tacit dma trace workload with parallel encoder") {
+      implicit val p = new TinyIrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "TinyIris_should_run_tacit_dma_parallel_trace"
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "software/tacit-dma.riscv"),
+        fast = true
+      )
+    }
   }
 }
