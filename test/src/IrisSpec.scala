@@ -331,6 +331,40 @@ class IrisSpec extends AnyFunSpec {
       )
     }
 
+    it("should run opu- benchmark binaries") {
+      implicit val p = new IrisConfig(sim = true)
+      val benchmarkDir = Utils.root / "saturn-vectors" / "benchmarks"
+      val benchmarkBinaries =
+        os.walk(benchmarkDir)
+          .filter(os.isFile)
+          .filter(path => path.last.startsWith("opu-") && path.last.endsWith(".riscv"))
+          .sortBy(_.last)
+
+      require(benchmarkBinaries.nonEmpty, s"No opu-* .riscv binaries found under $benchmarkDir")
+
+      benchmarkBinaries.foreach { binaryPath =>
+        val workDir = Utils.buildRoot / s"Iris_should_run_${binaryPath.last.stripSuffix(".riscv")}"
+        Utils.simulateTopWithBinaries(
+          workDir,
+          nChips = 1,
+          binaryPaths = Seq(binaryPath),
+          fast = true
+        )
+      }
+    }
+
+    it("should run fast saturn vector test") {
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_fast_saturn_vector_test"
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "saturn-vectors" / "benchmarks" / "vec-sgemm.riscv"),
+        fast = true
+      )
+    }
+    
     it("should run hello.riscv with FastRAM") {
       implicit val p = new IrisConfig(sim = true)
       val workDir = Utils.buildRoot / "Iris_should_run_hello_riscv_fast"
