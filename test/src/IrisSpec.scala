@@ -437,8 +437,8 @@ class IrisSpec extends AnyFunSpec {
     }
 
     it("should run tacit always trace workload") {
-      implicit val p = new TinyIrisConfig(sim = true)
-      val workDir = Utils.buildRoot / "TinyIris_should_run_tacit_always_trace"
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_tacit_always_trace"
 
       Utils.simulateTopWithBinaries(
         workDir,
@@ -449,8 +449,8 @@ class IrisSpec extends AnyFunSpec {
     }
 
     it("should run tacit always trace workload with parallel encoder") {
-      implicit val p = new TinyIrisConfig(sim = true)
-      val workDir = Utils.buildRoot / "TinyIris_should_run_tacit_always_parallel_trace"
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_tacit_always_parallel_trace"
 
       Utils.simulateTopWithBinaries(
         workDir,
@@ -461,8 +461,8 @@ class IrisSpec extends AnyFunSpec {
     }
 
     it("should run tacit dma trace workload") {
-      implicit val p = new TinyIrisConfig(sim = true)
-      val workDir = Utils.buildRoot / "TinyIris_should_run_tacit_dma_trace"
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_tacit_dma_trace"
 
       Utils.simulateTopWithBinaries(
         workDir,
@@ -473,8 +473,8 @@ class IrisSpec extends AnyFunSpec {
     }
 
     it("should run tacit dma trace workload with parallel encoder") {
-      implicit val p = new TinyIrisConfig(sim = true)
-      val workDir = Utils.buildRoot / "TinyIris_should_run_tacit_dma_parallel_trace"
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_tacit_dma_parallel_trace"
 
       Utils.simulateTopWithBinaries(
         workDir,
