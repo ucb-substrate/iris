@@ -236,13 +236,13 @@ class TinyIrisConfig(sim: Boolean = false)
           routerParams = testchipip.soc.OffchipRouterParams(tableEntries = 4),
           ports = Seq(
             edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
-              address = 0x8000,
+              address = 0x200000,
               managerWhere = SBUS,
               numLanes = 16,
               includeDefaultModels = true
             ),
             edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
-              address = 0xc000,
+              address = 0x208000,
               managerWhere = SBUS,
               numLanes = 16,
               includeDefaultModels = true
