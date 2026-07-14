@@ -416,6 +416,32 @@ class IrisSpec extends AnyFunSpec {
       )
     }
 
+    it("should run ucie vec memcpy test") {
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_ucie_vec_memcpy_test"
+
+      val chipid0 = 1
+      val chipid1 = 2
+      val chipidReg = p(ChipletRoutingKey).get.routerParams.tableAddress + p(ChipletRoutingKey).get.routerParams.tableEntries * 32
+      val chip0PlusArgs = Seq(
+        f"+init_write=0x${chipidReg}%08x:0x${chipid0}%08x",
+      )
+      val chip1PlusArgs = Seq(
+        f"+init_write=0x${chipidReg}%08x:0x${chipid1}%08x"
+      )
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 2,
+        binaryPaths = Seq(
+          Utils.root / "software/ucie-vec-memcpy.riscv"
+        ),
+        plusArgs = Seq(chip0PlusArgs, chip1PlusArgs),
+        debug = true,
+        fast = true
+      )
+    }
+
     it("should run ucie loopback test") {
             implicit val p = new IrisConfig(sim = true)
       val workDir = Utils.buildRoot / "Iris_should_run_ucie_loopback_test"
