@@ -9,8 +9,8 @@
 #include "ucie.h"
 
 #define OFFCHIP_OFFSET 0x800000000L
-#define UCIE0_REG_BASE  0x8000UL
-#define UCIE1_REG_BASE  0xc000UL
+#define UCIE0_REG_BASE  0x200000UL
+#define UCIE1_REG_BASE  0x208000UL
 
 uint32_t src[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 uint32_t dest[10];
