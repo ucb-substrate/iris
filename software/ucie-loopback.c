@@ -8,8 +8,8 @@
 #include "router.h"
 #include "ucie.h"
 
-#define UCIE0_REG_BASE 0x8000UL
-#define UCIE1_REG_BASE 0xc000UL
+#define UCIE0_REG_BASE 0x200000UL
+#define UCIE1_REG_BASE 0x208000UL
 #define ROUTER_MMIO 0x4000
 #define CHIP_ID_ADDR 0x4080
 #define OFFCHIP_OFFSET 0x800000000L
