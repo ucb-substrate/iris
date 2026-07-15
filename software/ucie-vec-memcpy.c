@@ -14,8 +14,8 @@
 #include "ucie.h"
 #include "rvv_memcpy.h"
 
-#define UCIE0_REG_BASE  0x8000UL
-#define UCIE1_REG_BASE  0xc000UL
+#define UCIE0_REG_BASE 0x200000UL
+#define UCIE1_REG_BASE 0x208000UL
 #define SCRATCHPAD_BASE 0x08000000UL
 #define OFFCHIP_OFFSET  0x800000000L
 

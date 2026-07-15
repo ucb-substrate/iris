@@ -326,7 +326,6 @@ class IrisSpec extends AnyFunSpec {
           Utils.root / "software/router.riscv"
         ),
         plusArgs = Seq(chip0PlusArgs, chip1PlusArgs),
-        debug = true,
         fast = true
       )
     }
@@ -411,8 +410,7 @@ class IrisSpec extends AnyFunSpec {
         nChips = nChips,
         binaryPaths = Seq(Utils.root / "software/ring-hello.riscv"),
         plusArgs = plusArgs,
-        fast = true,
-        debug = true
+        fast = true
       )
     }
 
@@ -437,7 +435,6 @@ class IrisSpec extends AnyFunSpec {
           Utils.root / "software/ucie-vec-memcpy.riscv"
         ),
         plusArgs = Seq(chip0PlusArgs, chip1PlusArgs),
-        debug = true,
         fast = true
       )
     }
@@ -457,8 +454,7 @@ class IrisSpec extends AnyFunSpec {
         nChips = 1,
         binaryPaths = Seq(Utils.root / "software/ucie-loopback.riscv"),
         plusArgs = Seq(chip0PlusArgs),
-        fast = true,
-        debug = true
+        fast = true
       )
     }
 
