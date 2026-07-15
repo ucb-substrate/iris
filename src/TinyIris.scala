@@ -115,6 +115,11 @@ class TinyIrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
   */
 class TinyIrisConfig(sim: Boolean = false)
     extends Config(
+      new tacit.WithTraceSinkDMA(1) ++
+      new tacit.WithTraceSinkAlways(0) ++
+      new WithTacitTraceArbiterMonitor ++
+      new WithTacitParallelEncoder ++
+
       // ==================================
       // Set up buses
       // ==================================

@@ -16,3 +16,9 @@
 [submodule "ucie"]
 	path = ucie
 	url = git@github.com:ucb-bar/ucie.git
+[submodule "tacit"]
+	path = tacit
+	url = git@github.com:riscv-tacit/tacit.git
+[submodule "tacit_decoder"]
+	path = tacit_decoder
+	url = git@github.com:riscv-tacit/tacit_decoder.git
