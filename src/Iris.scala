@@ -212,6 +212,7 @@ class IrisConfig(sim: Boolean = false)
         // Rocket
         // ==================================
         // Saturn DMA
+        new saturn.rocket.WithRocketVectorUnit(256, 256, VectorParams.dmaParams) ++
         // ICache
         new freechips.rocketchip.rocket.WithL1ICacheWays(2) ++
         new freechips.rocketchip.rocket.WithL1ICacheSets(128) ++
