@@ -142,19 +142,19 @@ class IrisConfig(sim: Boolean = false)
             inNodeMapping = ListMap(
               "Core 0 ICache" -> 0, // Shuttle 0 (left)
               "Core 1 ICache" -> 1, // Shuttle 1 (right)
-              "debug[0]" -> 2, // Front BUS
-              "Core 2 DCache" -> 4, // RocketTile
-              "ucie-client" -> 5
+              "debug[0]" -> 5, // Front BUS
+              "Core 2 DCache" -> 3, // RocketTile
+              "ucie-client" -> 4
             ),
             outNodeMapping = ListMap(
               "Core 0 TCM" -> 0, // Shuttle 0 TCM (left)
               "Core 1 TCM" -> 1, // Shuttle 1 TCM (right)
-              "ctrls[0]" -> 2, // PBUS
-              "ram[2],serdesser[2]|" -> 3, // L2   (top)
-              "ram[3],serdesser[3]|" -> 3, // L2   (top)
-              "ram[1],serdesser[1]|" -> 3, // L2   (bottom)
-              "ram[0],serdesser[0]|" -> 3, // L2   (bottom)
-              "ucie[0]" -> 5, // UCie 0
+              "ctrls[0]" -> 5, // PBUS
+              "ram[2],serdesser[2]|" -> 2, // L2   (top)
+              "ram[3],serdesser[3]|" -> 2, // L2   (top)
+              "ram[1],serdesser[1]|" -> 2, // L2   (bottom)
+              "ram[0],serdesser[0]|" -> 2, // L2   (bottom)
+              "ucie[0]" -> 4, // UCie 0
               "ram[0]|" -> 6, // SBUS SPAD (?)
               "ram[1]|" -> 6 // MBUS SPAD (?)
             )
