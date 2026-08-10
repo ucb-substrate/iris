@@ -389,12 +389,6 @@ class IrisConfig(sim: Boolean = false)
             )
         }) ++
 
-        /** use default bootrom */
-        // new testchipip.soc.WithMbusScratchpad(
-        //   base = 0x08000000,
-        //   /** add 64 KiB on-chip scratchpad */
-        //   size = 64 * 1024
-        // ) ++
         // Bus/interconnect settings
         /** hierarchical buses including sbus/mbus/pbus/fbus/cbus/l2 */
         new freechips.rocketchip.subsystem.WithCoherentBusTopology ++
