@@ -128,24 +128,22 @@ class TinyIrisConfig(sim: Boolean = false)
           constellation.protocol.DiplomaticNetworkNodeMapping(
             inNodeMapping = ListMap(
               "Core 0 ICache" -> 0, // Shuttle 0 (left)
-              "Core 1 ICache" -> 1, // Shuttle 1 (right)
-              "debug[0]" -> 2, // Front BUS
+              "Core 1 ICache" -> 2, // Shuttle 1 (right)
+              "debug[0]" -> 6, // Front BUS
               "Core 2 DCache" -> 4, // RocketTile
-              //"d2d_serial_tl" -> 5, // D2D SerialTL
               "ucie-client" -> 5
             ),
             outNodeMapping = ListMap(
               "Core 0 TCM" -> 0, // Shuttle 0 TCM (left)
-              "Core 1 TCM" -> 1, // Shuttle 1 TCM (right)
-              "ctrls[0]" -> 2, // PBUS
-              "ram[2],serdesser[2]|" -> 3, // L2   (top)
-              "ram[3],serdesser[3]|" -> 3, // L2   (top)
-              "ram[1],serdesser[1]|" -> 3, // L2   (bottom)
-              "ram[0],serdesser[0]|" -> 3, // L2   (bottom)
-              //"d2d_serial_tl" -> 5, // D2D SerialTL
-              "ucie[0]" -> 5,
-              "ram[0]|" -> 6, // SBUS SPAD (?)
-              "ram[1]|" -> 6 // MBUS SPAD (?)
+              "Core 1 TCM" -> 2, // Shuttle 1 TCM (right)
+              "ctrls[0]" -> 6, // PBUS
+              "serdesser[2]|" -> 3, // L2   (top)
+              "serdesser[3]|" -> 3, // L2   (top)
+              "serdesser[1]|" -> 3, // L2   (bottom)
+              "serdesser[0]|" -> 3, // L2   (bottom)
+              "ucie[0]" -> 5, // UCie 0
+              "ram[0]|" -> 1, // SBUS SPAD (?)
+              "ram[1]|" -> 1 // Also SBUS SPAD?
             )
           ),
           acdNoCParams = NoCParams(
@@ -278,7 +276,7 @@ class TinyIrisConfig(sim: Boolean = false)
                 val (phitWidth, flitWidth) = if (sim) {
                   (32, 32)
                 } else {
-                  (1, 16)
+                  (16, 16)
                 }
                 testchipip.serdes.DecoupledExternalSyncSerialPhyParams(
                   phitWidth = phitWidth,
@@ -378,12 +376,6 @@ class TinyIrisConfig(sim: Boolean = false)
             )
         }) ++
 
-        /** use default bootrom */
-        new testchipip.soc.WithMbusScratchpad(
-          base = 0x08000000,
-          /** add 64 KiB on-chip scratchpad */
-          size = 16 * 1024
-        ) ++
         // Bus/interconnect settings
         /** hierarchical buses including sbus/mbus/pbus/fbus/cbus/l2 */
         new freechips.rocketchip.subsystem.WithCoherentBusTopology ++
