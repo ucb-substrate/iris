@@ -291,6 +291,29 @@ class IrisSpec extends AnyFunSpec {
       }
     }
 
+    it("tiny iris verilog with tinysram macros") {
+      val targetDir = Utils.buildRoot / "TinyIris_sram_Verilog"
+      val memsConf  = targetDir / "TinyIrisTop.mems.conf"
+      val memsHammerJson = targetDir / "TinyIrisTop.mems.hammer.json"
+      implicit val p = new TinyIrisConfig
+      ChiselStage.emitSystemVerilogFile(
+        LazyModule(new TinyIrisTop).module,
+        args = Array("--target-dir", targetDir.toString()),
+        firtoolOpts = Array("--repl-seq-mem", s"--repl-seq-mem-file=${memsConf}")
+      )
+
+      val sramCompilerJson =
+        Utils.root / ".." / "vlsi" / "hammer-tstechn7-plugin" / "hammer" / "tstechn7" / "sram-compiler.json"
+      val genScript =
+        Utils.root / ".." / "vlsi" / "scripts" / "gen_mems_hammer.py"
+
+      os.proc(
+        "python3", genScript.toString,
+        memsConf.toString, sramCompilerJson.toString, memsHammerJson.toString,
+        "--rtl-dir", targetDir.toString
+      ).call(stdout = os.Inherit, stderr = os.Inherit, env = sys.env.toMap)
+    }
+
     it("should run hello.riscv") {
       implicit val p = new IrisConfig(sim = true)
       val workDir = Utils.buildRoot / "Iris_should_run_hello_riscv"
