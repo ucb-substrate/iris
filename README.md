@@ -6,18 +6,6 @@ This repo only contains the process-agnostic portions of the chip. Process-speci
 
 ## Usage
 
-Iris uses [Chippy](https://github.com/ucb-substrate/chippy) to enable standalone compilation.
-
-First, install Chippy:
-
-```bash
-git clone https://github.com/ucb-substrate/chippy.git
-cd chippy
-git submodule update --init --recursive
-./mill __.publishLocal
-cd ..
-```
-
 Install [espresso](https://github.com/chipsalliance/espresso) for NoC generation. If using a Chipyard environment, espresso should already be on PATH.
 
 Then, compile Iris:
