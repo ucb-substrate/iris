@@ -53,8 +53,10 @@ int main(void) {
 
   printf("Setting up UCIe0\n");
   setup_ucie(UCIE0_REG_BASE);
+  reg_write64(UCIE0_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
   printf("Setting up UCIe1\n");
   setup_ucie(UCIE1_REG_BASE);
+  reg_write64(UCIE1_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
 
   printf("Testing UCIe at port 0\n");
   program_router(0, 1, 0);

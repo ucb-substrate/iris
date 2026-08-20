@@ -19,7 +19,9 @@ int main(void) {
   printf("Got chip ID: %d\n", chip_id);
 
   setup_ucie(UCIE0_REG_BASE);
+  reg_write64(UCIE0_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
   setup_ucie(UCIE1_REG_BASE);
+  reg_write64(UCIE1_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
 
   int next = (chip_id % 4) + 1;
   int prev = ((chip_id + 2) % 4) + 1;
