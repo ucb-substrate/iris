@@ -223,13 +223,11 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
     when(dtm_success || success) { chipSuccessReg := true.B }
     chipSuccesses(chipId) := chipSuccessReg
 
+    // The PHY bumps carry a single-ended mainband bypass clock; the PLL
+    // reference pair and its RDAC bias are no longer bumps.
     Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1).foreach { ucie =>
-      ucie.phy.refClkP := DontCare
-      ucie.phy.refClkN := DontCare
-      ucie.phy.bypassClkP := ucieBypassClock
-      ucie.phy.bypassClkN := (!ucieBypassClock.asBool).asClock
+      ucie.phy.bypassClk := ucieBypassClock
       ucie.phy.digitalBypassClk := ucieDigitalBypassClock
-      ucie.phy.pllRdacVref := 0.U
     }
 
     Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1)
