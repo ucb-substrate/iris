@@ -56,6 +56,7 @@ void __main(void)
     // `dst`, then raise the flag.
     // ============================================================
     setup_ucie(UCIE0_REG_BASE);
+    reg_write64(UCIE0_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
     program_router(0, 2, 0);
 
     uint64_t peer_chip_id = 2;
@@ -88,6 +89,7 @@ void __main(void)
     // `dst` to the pattern.
     // ============================================================
     setup_ucie(UCIE1_REG_BASE);
+    reg_write64(UCIE1_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
     program_router(0, 1, 1);
 
     *done_flag = 0;
