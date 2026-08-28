@@ -476,17 +476,24 @@ class IrisConfig(sim: Boolean = false)
         new testchipip.soc.WithChipletRouting(testchipip.soc.ChipletRoutingParams(
           routerParams = testchipip.soc.OffchipRouterParams(tableEntries = 4),
           ports = Seq(
+            // The two ports are identical logic, so they would dedup into
+            // one SystemVerilog module. The orientation splits them into
+            // UcieTL_NS and UcieTL_EW so PD can harden each separately: port 0
+            // is placed unrotated facing down, port 1 is rotated 90 degrees
+            // facing right.
             edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x200000,
               managerWhere = SBUS,
               numLanes = 16,
-              includeDefaultModels = true
+              includeDefaultModels = true,
+              orientation = edu.berkeley.cs.uciedigital.tilelink.UcieOrientation.NS
             ),
             edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x208000,
               managerWhere = SBUS,
               numLanes = 16,
-              includeDefaultModels = true
+              includeDefaultModels = true,
+              orientation = edu.berkeley.cs.uciedigital.tilelink.UcieOrientation.EW
             )
         ))) ++
         new WithIrisUncore(sim)
