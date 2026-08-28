@@ -1,4 +1,13 @@
 #################################
+# Paths
+#################################
+
+# Repo root, derived from this Makefile's own path rather than the working
+# directory, so the mill invocation below works under `make -C`, `make -f`, or
+# a plain `make` from this folder.
+REPO_ROOT := $(abspath $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/..)
+
+#################################
 # RISCV Toolchain
 #################################
 
@@ -57,6 +66,15 @@ ucie-vec-memcpy.riscv: ucie-vec-memcpy.o
 #################################
 # Recipes
 #################################
+
+# ucie.h holds the UCIe register offsets, generated from the UCIe parameters in
+# IrisConfig. It is checked in so building these programs needs only the RISC-V
+# toolchain; regenerating it needs the Scala toolchain, so it is not a
+# prerequisite of the program rules. Re-run this after bumping the ucie
+# submodule or changing the UCIe ports in IrisConfig -- CI checks it is current.
+.PHONY: ucie.h
+ucie.h:
+	cd $(REPO_ROOT) && ./mill runMain edu.berkeley.cs.iris.GenUcieHeader software/ucie.h
 
 .PHONY: clean
 clean:

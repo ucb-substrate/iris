@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push to a branch cancels the run still in flight for it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compile, elaborate, and check generated collateral
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The .gitmodules URLs are SSH, but every submodule below is a public
+      # repo, so rewrite to HTTPS instead of giving the runner a deploy key.
+      # DRAMSim2 and tacit_decoder are simulation-only and not in the mill
+      # build, so they stay uninitialized.
+      - name: Check out submodules
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule update --init \
+            rocket-chip shuttle saturn-vectors testchipip ucie tacit
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # Dominated by the Chisel/rocket-chip artifacts and the firtool binary
+      # Chisel resolves at elaboration time.
+      - name: Cache JVM dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/coursier
+            ~/.cache/mill
+          key: ${{ runner.os }}-mill-${{ hashFiles('build.mill', 'module.mill') }}
+          restore-keys: ${{ runner.os }}-mill-
+
+      - name: Compile
+        run: ./mill test.compile
+
+      # Elaboration only. The rest of IrisSpec drives VCS and needs RISC-V
+      # binaries, so it stays out of CI.
+      - name: Elaborate Iris
+        run: |
+          ./mill test.testOnly edu.berkeley.cs.iris.IrisSpec \
+            -- -t "Iris should generate valid System Verilog"
+
+      - name: Elaborate IrisDryRun
+        run: |
+          ./mill test.testOnly edu.berkeley.cs.iris.IrisSpec \
+            -- -t "IrisDryRun should generate valid System Verilog"
+
+      - name: Elaborate TinyIris
+        run: |
+          ./mill test.testOnly edu.berkeley.cs.iris.IrisSpec \
+            -- -t "TinyIris should generate valid System Verilog for TinyIris"
+
+      # PD hardens the two UCIe blocks separately, so they have to stay two
+      # SystemVerilog modules. They fold back into one as soon as their
+      # parameters -- orientation included -- match, and nothing else in the
+      # flow would notice.
+      - name: Check the UCIe blocks did not dedup
+        run: |
+          out=build/Iris_should_generate_valid_System_Verilog
+          n=$(grep -lE '^module UcieTL(_[A-Za-z0-9]+)?\(' "$out"/*.sv | wc -l)
+          if [ "$n" -ne 2 ]; then
+            echo "::error::expected 2 UcieTL modules in $out, found $n"
+            grep -hE '^module UcieTL(_[A-Za-z0-9]+)?\(' "$out"/*.sv || true
+            exit 1
+          fi
+
+      # Catches a ucie bump (or a UCIe parameter change) that moves the
+      # register map without the checked-in header following it.
+      - name: Check ucie.h is up to date
+        run: |
+          ./mill runMain edu.berkeley.cs.iris.GenUcieHeader "$RUNNER_TEMP/ucie.h"
+          if ! diff -u software/ucie.h "$RUNNER_TEMP/ucie.h"; then
+            echo "::error::software/ucie.h is stale; run 'make ucie.h' in software/"
+            exit 1
+          fi
