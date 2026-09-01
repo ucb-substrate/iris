@@ -43,6 +43,34 @@ jobs:
           key: ${{ runner.os }}-mill-${{ hashFiles('build.mill', 'module.mill') }}
           restore-keys: ${{ runner.os }}-mill-
 
+      # Elaboration shells out to the device tree compiler, which rocket-chip runs to
+      # build the DTB the boot ROM embeds, and it is not on the runner image. Installing
+      # it through apt would cost an `apt-get update` first -- tens of MB of indexes to
+      # land 223 KB of dtc -- so fetch the package and its two dependencies from the
+      # archive pool instead. Pinned by version and checksum, which is also what makes
+      # the plain-HTTP fetch safe; apt verifies its downloads the same way. If the pool
+      # ever drops these versions the curl 404s and the apt path takes over.
+      - name: Install the device tree compiler
+        run: |
+          set -euo pipefail
+          pool=http://archive.ubuntu.com/ubuntu/pool/main
+          cd "$(mktemp -d)"
+          if curl -fsSLO "$pool/d/device-tree-compiler/device-tree-compiler_1.7.0-2build1_amd64.deb" \
+             && curl -fsSLO "$pool/d/device-tree-compiler/libfdt1_1.7.0-2build1_amd64.deb" \
+             && curl -fsSLO "$pool/liby/libyaml/libyaml-0-2_0.2.5-1build1_amd64.deb"; then
+            sha256sum --check <<'SUMS'
+          b2c1e8c86f18b6bda26408f92bfb9ec1a1e40bfdc41f1034600ccd68e82d2ed7  device-tree-compiler_1.7.0-2build1_amd64.deb
+          274d20dfab9d6b216b5de85446a93f6ce5b2cd82c847b8dfdc508577f76eb96a  libfdt1_1.7.0-2build1_amd64.deb
+          f5271b120d936dcc7ddf17b9e718df41d55386a6075555d0c634925eaef0b2ac  libyaml-0-2_0.2.5-1build1_amd64.deb
+          SUMS
+            sudo dpkg -i ./*.deb
+          else
+            echo "Archive pool no longer serves the pinned versions; falling back to apt."
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends device-tree-compiler
+          fi
+          dtc --version
+
       # Constellation builds its routing tables with Chisel's `decoder`, which uses
       # espresso when it is on the PATH and otherwise falls back to Quine-McCluskey
       # with nothing but a logged error. QMC is exponential on tables this size, so
