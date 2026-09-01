@@ -14,6 +14,14 @@ jobs:
   build:
     name: Compile, elaborate, and check generated collateral
     runs-on: ubuntu-latest
+    # Chisel's FIRRTL converter recurses over expression trees, and Iris's are deep
+    # enough to overflow the runner's default 1 MB stack inside Converter.convertPrim,
+    # aborting the suite before a single test runs. The heap goes up with it: a runner
+    # defaults to a quarter of its 16 GB, which is tight for elaborating a chip top.
+    # JAVA_TOOL_OPTIONS is what reaches the JVM mill forks to run the tests in, which is
+    # where elaboration actually happens.
+    env:
+      JAVA_TOOL_OPTIONS: -Xmx6g -Xss8m
     steps:
       - uses: actions/checkout@v4
 
