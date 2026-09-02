@@ -16,12 +16,16 @@ jobs:
     runs-on: ubuntu-latest
     # Chisel's FIRRTL converter recurses over expression trees, and Iris's are deep
     # enough to overflow the runner's default 1 MB stack inside Converter.convertPrim,
-    # aborting the suite before a single test runs. The heap goes up with it: a runner
-    # defaults to a quarter of its 16 GB, which is tight for elaborating a chip top.
-    # JAVA_TOOL_OPTIONS is what reaches the JVM mill forks to run the tests in, which is
-    # where elaboration actually happens.
+    # aborting the suite before a single test runs. How much stack a walk needs is not
+    # fixed: each level is ~8 frames of Scala collection plumbing that the JIT collapses
+    # once it compiles them, so a cold JVM spends several times more stack than a warm
+    # one on the same design. 8m was enough on one run and overflowed on the next from
+    # an identical tree, so this is sized to sit well clear of that edge rather than
+    # just past it. The heap goes up too: a runner defaults to a quarter of its 16 GB,
+    # which is tight for elaborating a chip top. JAVA_TOOL_OPTIONS is what reaches the
+    # JVM mill forks to run the tests in, which is where elaboration happens.
     env:
-      JAVA_TOOL_OPTIONS: -Xmx6g -Xss8m
+      JAVA_TOOL_OPTIONS: -Xmx6g -Xss64m
     steps:
       - uses: actions/checkout@v4
 
