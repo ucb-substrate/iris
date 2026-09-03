@@ -115,8 +115,9 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
     uart <> system.uart(0)
 
     // Connect D2D UCIe
-    val c2c_ucie0 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[edu.berkeley.cs.uciedigital.tilelink.UcieTLParams].numLanes))
-    val c2c_ucie1 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(p(ChipletRoutingKey).get.ports(1).asInstanceOf[edu.berkeley.cs.uciedigital.tilelink.UcieTLParams].numLanes))
+    val uciePorts = UciePort.all(p)
+    val c2c_ucie0 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(uciePorts(0).numLanes))
+    val c2c_ucie1 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(uciePorts(1).numLanes))
     c2c_ucie0 <> system.d2d_port_ios.get(0)
     c2c_ucie1 <> system.d2d_port_ios.get(1)
   }
@@ -476,25 +477,23 @@ class IrisConfig(sim: Boolean = false)
         new testchipip.soc.WithChipletRouting(testchipip.soc.ChipletRoutingParams(
           routerParams = testchipip.soc.OffchipRouterParams(tableEntries = 4),
           ports = Seq(
-            // The two ports are identical logic, so they would dedup into
-            // one SystemVerilog module. The orientation splits them into
-            // UcieTL_NS and UcieTL_EW so PD can harden each separately: port 0
-            // is placed unrotated facing down, port 1 is rotated 90 degrees
-            // facing right.
-            edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
+            // PD hardens the two UCIe links together, so UcieComplexPort puts
+            // both instances inside one UcieComplex module. They are identical
+            // logic and share a `moduleId`, so they dedup into a single UcieTL
+            // underneath it; splitting them again is a matter of giving one its
+            // own `moduleId`.
+            UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x200000,
               managerWhere = SBUS,
               numLanes = 16,
-              includeDefaultModels = true,
-              orientation = edu.berkeley.cs.uciedigital.tilelink.UcieOrientation.NS
-            ),
-            edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
+              includeDefaultModels = true
+            )),
+            UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x208000,
               managerWhere = SBUS,
               numLanes = 16,
-              includeDefaultModels = true,
-              orientation = edu.berkeley.cs.uciedigital.tilelink.UcieOrientation.EW
-            )
+              includeDefaultModels = true
+            ))
         ))) ++
         new WithIrisUncore(sim)
     )

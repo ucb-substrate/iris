@@ -1,7 +1,5 @@
 package edu.berkeley.cs.iris
 
-import org.chipsalliance.cde.config.Parameters
-import testchipip.soc.ChipletRoutingKey
 import edu.berkeley.cs.uciedigital.tilelink.UcieTLParams
 
 /** Writes the bringup software's `ucie.h` from the UCIe parameters IrisConfig
@@ -23,10 +21,7 @@ object GenUcieHeader {
 
   /** The UCIe ports of IrisConfig, in chiplet-router port order. */
   def uciePorts: Seq[UcieTLParams] = {
-    val p: Parameters = new IrisConfig
-    val ports = p(ChipletRoutingKey)
-      .map(_.ports.collect { case u: UcieTLParams => u })
-      .getOrElse(Nil)
+    val ports = UciePort.all(new IrisConfig)
     require(ports.nonEmpty, "IrisConfig has no UCIe chiplet-router ports")
     ports
   }
@@ -34,19 +29,19 @@ object GenUcieHeader {
   def render(): String = {
     val ports = uciePorts
     // The header holds one register layout, so every port has to agree on
-    // everything that layout depends on. Address and orientation do not reach
-    // it: the offsets are relative to each port's own MMIO base, and the
-    // orientation only names modules.
+    // everything that layout depends on. Address and moduleId do not reach it:
+    // the offsets are relative to each port's own MMIO base, and the moduleId
+    // only names modules.
     val canonical = ports.map(
       _.copy(
         address = ports.head.address,
-        orientation = ports.head.orientation
+        moduleId = ports.head.moduleId
       )
     )
     require(
       canonical.forall(_ == canonical.head),
       "UCIe ports must share a register layout, but their parameters differ " +
-        s"beyond address and orientation: ${canonical.distinct.mkString("\n")}"
+        s"beyond address and moduleId: ${canonical.distinct.mkString("\n")}"
     )
     edu.berkeley.cs.uciedigital.tilelink.GenUcieHeader
       .render(ports.head, regenCommand)
