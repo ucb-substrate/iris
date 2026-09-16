@@ -458,7 +458,7 @@ class IrisConfig(sim: Boolean = false)
         new saturn.shuttle.WithShuttleVectorUnit(
           256,
           128,
-          VectorParams.opuParams
+          VectorParams.opuMxParams
         ) ++
         new shuttle.common.WithShuttleTileBeatBytes(32) ++
         new shuttle.common.WithTCM(size = 128L << 10, banks = 2) ++
