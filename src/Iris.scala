@@ -420,15 +420,13 @@ class IrisConfig(sim: Boolean = false)
           IrisNoCParams(
             constellation.protocol.DiplomaticNetworkNodeMapping(
               inNodeMapping = ListMap(
-                "Core 0 ICache" -> 0, // Shuttle 0 (left)
-                "Core 1 ICache" -> 2, // Shuttle 1 (right)
+                "Core 0 ICache" -> 0, // Shuttle (left)
                 "debug[0]" -> 6, // Front BUS
-                "Core 2 DCache" -> 4, // RocketTile
+                "Core 1 DCache" -> 4, // RocketTile
                 "ucie-client" -> 5
               ),
               outNodeMapping = ListMap(
-                "Core 0 TCM" -> 0, // Shuttle 0 TCM (left)
-                "Core 1 TCM" -> 2, // Shuttle 1 TCM (right)
+                "Core 0 TCM" -> 0, // Shuttle TCM (left)
                 "ctrls[0]" -> 6, // PBUS
                 "serdesser[2]|" -> 3, // L2   (top)
                 "serdesser[3]|" -> 3, // L2   (top)
@@ -471,7 +469,18 @@ class IrisConfig(sim: Boolean = false)
         // new shuttle.common.WithL1DCacheSets(256) ++
         new shuttle.common.WithL1DCacheBanks(1) ++
         new shuttle.common.WithL1DCacheTagBanks(1) ++
-        new shuttle.common.WithNShuttleCores(2) ++
+        // ONE Shuttle tile. Two of them do not fit: each carries an 8x8
+        // OuterProductUnit (dLen 256 -> 64 OuterProductClusters), and the
+        // cluster alone measures ~15.7k um^2 of cells, so one OPU array is
+        // ~1.6mm^2 of die against a 6.1mm^2 core that also has to hold two
+        // 1mm^2 UcieTL links, the L2, Rocket, the scratchpads and the uncore.
+        // See `iris_hierarchy` in vlsi/src/lib.rs for the area budget the
+        // floorplan is built to.
+        //
+        // Node 2 of the SBUS NoC torus, which the second tile used, is left
+        // unmapped above; the tile ids shift with the tile count, so Rocket is
+        // "Core 1" here where two Shuttle tiles made it "Core 2".
+        new shuttle.common.WithNShuttleCores(1) ++
 
         // Chiplet Router with two D2D SerialTL ports and two D2D UCIe ports
         new testchipip.soc.WithChipletRouting(testchipip.soc.ChipletRoutingParams(
