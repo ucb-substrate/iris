@@ -478,21 +478,28 @@ class IrisConfig(sim: Boolean = false)
           routerParams = testchipip.soc.OffchipRouterParams(tableEntries = 4),
           ports = Seq(
             // PD hardens the two UCIe links together, so UcieComplexPort puts
-            // both instances inside one UcieComplex module. They are identical
-            // logic and share a `moduleId`, so they dedup into a single UcieTL
-            // underneath it; splitting them again is a matter of giving one its
-            // own `moduleId`.
+            // both instances inside one UcieComplex module. Their PHYs differ
+            // in their lane clock distribution: link 0's bump field is the
+            // canonical orientation, which the analog IP's clock DEF gives a
+            // buffered clock tree, and the netlist of that tree is what its PHY
+            // instantiates outside simulation. Link 1's field is turned 90
+            // degrees and keeps the behavioral network until the DEF has a tree
+            // for it. So each link is its own module, `moduleId` 0 and 1.
             UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x200000,
               managerWhere = SBUS,
               numLanes = 16,
-              includeDefaultModels = true
+              includeDefaultModels = true,
+              clkDistLayout =
+                if (sim) edu.berkeley.cs.uciedigital.phy.macros.clocking.ClkDistLayout.Behavioral
+                else edu.berkeley.cs.uciedigital.phy.macros.clocking.ClkDistLayout.Buffered("r0")
             )),
             UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x208000,
               managerWhere = SBUS,
               numLanes = 16,
-              includeDefaultModels = true
+              includeDefaultModels = true,
+              moduleId = 1
             ))
         ))) ++
         new WithIrisUncore(sim)

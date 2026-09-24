@@ -29,19 +29,21 @@ object GenUcieHeader {
   def render(): String = {
     val ports = uciePorts
     // The header holds one register layout, so every port has to agree on
-    // everything that layout depends on. Address and moduleId do not reach it:
-    // the offsets are relative to each port's own MMIO base, and the moduleId
-    // only names modules.
+    // everything that layout depends on. Address, moduleId and the clock
+    // distribution netlist do not reach it: the offsets are relative to each
+    // port's own MMIO base, the moduleId only names modules, and the netlist is
+    // physical design.
     val canonical = ports.map(
       _.copy(
         address = ports.head.address,
-        moduleId = ports.head.moduleId
+        moduleId = ports.head.moduleId,
+        clkDistLayout = ports.head.clkDistLayout
       )
     )
     require(
       canonical.forall(_ == canonical.head),
       "UCIe ports must share a register layout, but their parameters differ " +
-        s"beyond address and moduleId: ${canonical.distinct.mkString("\n")}"
+        s"beyond address, moduleId and clock distribution: ${canonical.distinct.mkString("\n")}"
     )
     edu.berkeley.cs.uciedigital.tilelink.GenUcieHeader
       .render(ports.head, regenCommand)
