@@ -458,7 +458,7 @@ class IrisConfig(sim: Boolean = false)
           128,
           VectorParams.opuMxParams
         ) ++
-        new shuttle.common.WithShuttleTileBeatBytes(32) ++
+        new shuttle.common.WithShuttleTileBeatBytes(16) ++
         new shuttle.common.WithTCM(size = 128L << 10, banks = 2) ++
         new shuttle.common.WithShuttleTileBoundaryBuffers() ++
         // ICache
