@@ -454,9 +454,9 @@ class IrisConfig(sim: Boolean = false)
         // ==================================
         // new shuttle.common.WithAsynchronousShuttleTiles(3, 3, location=InCluster(0)) ++ // Add async crossings between RocketTile and uncore
         new saturn.shuttle.WithShuttleVectorUnit(
-          512,
           256,
-          VectorParams.opuParams
+          128,
+          VectorParams.opuMxParams
         ) ++
         new shuttle.common.WithShuttleTileBeatBytes(32) ++
         new shuttle.common.WithTCM(size = 128L << 10, banks = 2) ++
