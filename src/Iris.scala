@@ -44,6 +44,7 @@ class JTAGChipIO(hasReset: Boolean) extends Bundle {
 class IrisSystem(implicit p: Parameters)
     extends edu.berkeley.cs.chippy.ChippySystem
     with testchipip.soc.CanHaveChipletRouting
+    with CanHaveUcieClkRegs // UCIe clock registers, which the router can't attach
     with testchipip.soc.CanHaveSubsystemInjectors // Enables the subsystem injector API
     with testchipip.soc.CanHaveSwitchableOffchipBus // Enables optional off-chip-bus with interface-switch
     with testchipip.serdes.CanHavePeripheryTLSerial
@@ -479,12 +480,13 @@ class IrisConfig(sim: Boolean = false)
           ports = Seq(
             // PD hardens the two UCIe links together, so UcieComplexPort puts
             // both instances inside one UcieComplex module. Their PHYs differ
-            // in their lane clock distribution: link 0's bump field is the
-            // canonical orientation, which the analog IP's clock DEF gives a
-            // buffered clock tree, and the netlist of that tree is what its PHY
-            // instantiates outside simulation. Link 1's field is turned 90
-            // degrees and keeps the behavioral network until the DEF has a tree
-            // for it. So each link is its own module, `moduleId` 0 and 1.
+            // in their lane clock distribution: the analog IP's clock DEF gives
+            // each link a buffered clock tree laid out for its own bump field --
+            // link 0's in the canonical orientation, link 1's turned 90 degrees
+            // -- and the netlist of that tree is what its PHY instantiates
+            // outside simulation. So each link is its own module, `moduleId` 0
+            // and 1. Each link also has its own high-speed and digital bypass
+            // clock bumps.
             UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x200000,
               managerWhere = SBUS,
@@ -499,7 +501,10 @@ class IrisConfig(sim: Boolean = false)
               managerWhere = SBUS,
               numLanes = 16,
               includeDefaultModels = true,
-              moduleId = 1
+              moduleId = 1,
+              clkDistLayout =
+                if (sim) edu.berkeley.cs.uciedigital.phy.macros.clocking.ClkDistLayout.Behavioral
+                else edu.berkeley.cs.uciedigital.phy.macros.clocking.ClkDistLayout.Buffered("r90")
             ))
         ))) ++
         new WithIrisUncore(sim)
