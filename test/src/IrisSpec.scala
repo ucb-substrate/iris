@@ -152,7 +152,7 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
   val digitalFreqMHz = 500
   val digitalClock = freeRunningClock(digitalFreqMHz)
   val ucieBypassClock = freeRunningClock(8000)
-  val ucieDigitalBypassClock = freeRunningClock(800)
+  val ucieDigitalBypassClock = freeRunningClock(500) // previously was 800
   val ucieSidebandBypassClock = freeRunningClock(800)
   // The clocking tile's PLL reference, as in the UCIe repo's own harness.
   val ucieRefClock = freeRunningClock(100)
@@ -432,6 +432,26 @@ class IrisSpec extends AnyFunSpec {
         binaryPaths = Seq(Utils.root / "software/ucie-loopback.riscv"),
         plusArgs = Seq(chip0PlusArgs),
         fast = true
+      )
+    }
+
+    it("should run ucie digital loopback test") {
+            implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_ucie_digital_loopback_test"
+
+      val chipid0 = 1
+      val chipidReg = p(ChipletRoutingKey).get.routerParams.tableAddress + p(ChipletRoutingKey).get.routerParams.tableEntries * 32
+      val chip0PlusArgs = Seq(
+        f"+init_write=0x${chipidReg}%08x:0x${chipid0}%08x",
+      )
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "software/ucie-digital-loopback.riscv"),
+        plusArgs = Seq(chip0PlusArgs),
+        fast = true,
+        debug = true
       )
     }
 

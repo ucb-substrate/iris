@@ -33,10 +33,10 @@ ARCHFLAGS = -march=$(ARCH) -mabi=$(ABI)
 # vector extension. Kept separate so it doesn't force V onto every program.
 VEC_ARCHFLAGS = -march=rv64gcv_zfh_zvfh -mabi=$(ABI)
 
-CFLAGS  = -std=gnu99 -O2 -fno-common -fno-builtin-printf -Wall -specs=htif_nano.specs
+CFLAGS  = -std=gnu99 -O2 -fno-common -fno-builtin-printf -Wall -specs=htif_nano.specs -Iinclude
 LDFLAGS = -specs=htif_nano.specs
 
-PROGRAMS = hello hello0 hello1 router ring-hello ucie-loopback tacit-always tacit-dma ucie-vec-memcpy
+PROGRAMS = hello hello0 hello1 router ring-hello ucie-loopback ucie-digital-loopback tacit-always tacit-dma ucie-vec-memcpy
 
 .DEFAULT_GOAL := default
 
