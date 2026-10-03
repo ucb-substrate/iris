@@ -58,22 +58,8 @@ int main(void) {
   // directly onto the mainband, requests here are carried by the trained
   // link through the real protocol layer/D2D adapter/logical PHY stack.
   printf("Setting up UCIe0 (digital controller)\n");
-  // TEMP: the clock registers reset with the global delay line at max;
-  // zero it so the bump QuarterDelay alone gives the quarter shift, and
-  // reset the dividers while gated so TX and RX word framing line up.
-  set_clk_gate(UCIE0_REG_BASE, 0);
-  set_global_delay(UCIE0_REG_BASE, 0);
-  reset_dividers(UCIE0_REG_BASE);
-  set_clk_gate(UCIE0_REG_BASE, 1);
   setup_ucie_digital(UCIE0_REG_BASE);
   printf("Setting up UCIe1 (digital controller)\n");
-  // TEMP: the clock registers reset with the global delay line at max;
-  // zero it so the bump QuarterDelay alone gives the quarter shift, and
-  // reset the dividers while gated so TX and RX word framing line up.
-  set_clk_gate(UCIE1_REG_BASE, 0);
-  set_global_delay(UCIE1_REG_BASE, 0);
-  reset_dividers(UCIE1_REG_BASE);
-  set_clk_gate(UCIE1_REG_BASE, 1);
   setup_ucie_digital(UCIE1_REG_BASE);
 
   printf("Testing UCIe at port 0\n");

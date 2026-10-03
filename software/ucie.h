@@ -371,6 +371,10 @@ static inline void setup_ucie(uintptr_t base) {
 }
 
 static inline void setup_ucie_digital(uintptr_t base) {
+  set_clk_gate(base, 0x0ULL);
+  set_global_delay(base, 0x1dULL);
+  reset_dividers(base);
+  set_clk_gate(base, 0x1ULL);
   for (int lane = 0; lane < 20; lane++) {
     write_txctl(base, lane, UCIE_TXCTL_TILE_OFS, UCIE_ENABLE_TX_CTL);
   }
