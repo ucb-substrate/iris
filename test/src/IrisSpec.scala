@@ -163,6 +163,20 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
   ucieDigitalBypassClockSource.io.gate := false.B
   ucieDigitalBypassClock := ucieDigitalBypassClockSource.io.clk
 
+  val ucieSidebandBypassFreqMHz = 800
+  val ucieSidebandBypassClock = Wire(Clock())
+  val ucieSidebandBypassClockSource = Module(new ClockSourceAtFreqMHz(ucieSidebandBypassFreqMHz))
+  ucieSidebandBypassClockSource.io.power := true.B
+  ucieSidebandBypassClockSource.io.gate := false.B
+  ucieSidebandBypassClock := ucieSidebandBypassClockSource.io.clk
+
+  // The clocking tile's PLL reference, as in the UCIe repo's own harness.
+  val ucieRefFreqMHz = 100
+  val ucieRefClock = Wire(Clock())
+  val ucieRefClockSource = Module(new ClockSourceAtFreqMHz(ucieRefFreqMHz))
+  ucieRefClockSource.io.power := true.B
+  ucieRefClockSource.io.gate := false.B
+  ucieRefClock := ucieRefClockSource.io.clk
 
   implicit def view[A <: Data, B <: Data]
       : DataView[testchipip.tsi.TSIIO, TSIIO] =
@@ -228,6 +242,8 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
     Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1).foreach { ucie =>
       ucie.phy.bypassClk := ucieBypassClock
       ucie.phy.digitalBypassClk := ucieDigitalBypassClock
+      ucie.phy.sidebandBypassClk := ucieSidebandBypassClock
+      ucie.phy.refClk := ucieRefClock
     }
 
     Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1)

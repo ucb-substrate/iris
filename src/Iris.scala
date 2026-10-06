@@ -44,6 +44,7 @@ class JTAGChipIO(hasReset: Boolean) extends Bundle {
 class IrisSystem(implicit p: Parameters)
     extends edu.berkeley.cs.chippy.ChippySystem
     with testchipip.soc.CanHaveChipletRouting
+    with CanHaveUcieRegisters // UCIe register blocks, attached around the router
     with testchipip.soc.CanHaveSubsystemInjectors // Enables the subsystem injector API
     with testchipip.soc.CanHaveSwitchableOffchipBus // Enables optional off-chip-bus with interface-switch
     with testchipip.serdes.CanHavePeripheryTLSerial
