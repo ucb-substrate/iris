@@ -102,9 +102,8 @@ class TinyIrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
     // c2c_serial_tl1 <> system.d2d_port_ios.get(1)
 
     // Connect D2D UCIe
-    val uciePorts = UciePort.all(p)
-    val c2c_ucie0 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(uciePorts(0).numLanes))
-    val c2c_ucie1 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(uciePorts(1).numLanes))
+    val c2c_ucie0 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(p(ChipletRoutingKey).get.ports(0).asInstanceOf[edu.berkeley.cs.uciedigital.tilelink.UcieTLParams].numLanes))
+    val c2c_ucie1 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(p(ChipletRoutingKey).get.ports(1).asInstanceOf[edu.berkeley.cs.uciedigital.tilelink.UcieTLParams].numLanes))
     c2c_ucie0 <> system.d2d_port_ios.get(0)
     c2c_ucie1 <> system.d2d_port_ios.get(1)
   }
@@ -239,20 +238,18 @@ class TinyIrisConfig(sim: Boolean = false)
         new testchipip.soc.WithChipletRouting(testchipip.soc.ChipletRoutingParams(
           routerParams = testchipip.soc.OffchipRouterParams(tableEntries = 4),
           ports = Seq(
-            // IrisSystem attaches the UCIe register blocks itself, which needs
-            // the links UcieComplexPort builds.
-            UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
+            edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x200000,
               managerWhere = SBUS,
               numLanes = 16,
               includeDefaultModels = true
-            )),
-            UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
+            ),
+            edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x208000,
               managerWhere = SBUS,
               numLanes = 16,
               includeDefaultModels = true
-            ))
+            )
         ))) ++
 
         // 1 serial tilelink port
