@@ -492,6 +492,7 @@ class IrisConfig(sim: Boolean = false)
               managerWhere = SBUS,
               numLanes = 16,
               includeDefaultModels = true,
+              sim = sim,
               clkDistLayout =
                 if (sim) edu.berkeley.cs.uciedigital.phy.macros.clocking.ClkDistLayout.Behavioral
                 else edu.berkeley.cs.uciedigital.phy.macros.clocking.ClkDistLayout.Buffered("r0")
@@ -501,6 +502,7 @@ class IrisConfig(sim: Boolean = false)
               managerWhere = SBUS,
               numLanes = 16,
               includeDefaultModels = true,
+              sim = sim,
               moduleId = 1,
               clkDistLayout =
                 if (sim) edu.berkeley.cs.uciedigital.phy.macros.clocking.ClkDistLayout.Behavioral

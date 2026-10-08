@@ -242,13 +242,15 @@ class TinyIrisConfig(sim: Boolean = false)
               address = 0x200000,
               managerWhere = SBUS,
               numLanes = 16,
-              includeDefaultModels = true
+              includeDefaultModels = true,
+              sim = sim
             ),
             edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x208000,
               managerWhere = SBUS,
               numLanes = 16,
-              includeDefaultModels = true
+              includeDefaultModels = true,
+              sim = sim
             )
         ))) ++
 
