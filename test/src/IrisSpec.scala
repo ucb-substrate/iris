@@ -141,28 +141,21 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
     val reset = Input(Bool())
   })
 
+  // A free-running clock from a simulation clock source.
+  def freeRunningClock(freqMHz: Double): Clock = {
+    val source = Module(new ClockSourceAtFreqMHz(freqMHz))
+    source.io.power := true.B
+    source.io.gate := false.B
+    source.io.clk
+  }
+
   val digitalFreqMHz = 500
-
-  val digitalClock = Wire(Clock())
-  val source = Module(new ClockSourceAtFreqMHz(digitalFreqMHz))
-  source.io.power := true.B
-  source.io.gate := false.B
-  digitalClock := source.io.clk
-
-  val ucieBypassFreqMHz = 8000
-  val ucieBypassClock = Wire(Clock())
-  val ucieBypassClockSource = Module(new ClockSourceAtFreqMHz(ucieBypassFreqMHz))
-  ucieBypassClockSource.io.power := true.B
-  ucieBypassClockSource.io.gate := false.B
-  ucieBypassClock := ucieBypassClockSource.io.clk
-
-  val ucieDigitalBypassFreqMHz = 800
-  val ucieDigitalBypassClock = Wire(Clock())
-  val ucieDigitalBypassClockSource = Module(new ClockSourceAtFreqMHz(ucieDigitalBypassFreqMHz))
-  ucieDigitalBypassClockSource.io.power := true.B
-  ucieDigitalBypassClockSource.io.gate := false.B
-  ucieDigitalBypassClock := ucieDigitalBypassClockSource.io.clk
-
+  val digitalClock = freeRunningClock(digitalFreqMHz)
+  val ucieBypassClock = freeRunningClock(8000)
+  val ucieDigitalBypassClock = freeRunningClock(800)
+  val ucieSidebandBypassClock = freeRunningClock(800)
+  // The clocking tile's PLL reference, as in the UCIe repo's own harness.
+  val ucieRefClock = freeRunningClock(100)
 
   implicit def view[A <: Data, B <: Data]
       : DataView[testchipip.tsi.TSIIO, TSIIO] =
@@ -228,6 +221,8 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
     Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1).foreach { ucie =>
       ucie.phy.bypassClk := ucieBypassClock
       ucie.phy.digitalBypassClk := ucieDigitalBypassClock
+      ucie.phy.sidebandBypassClk := ucieSidebandBypassClock
+      ucie.phy.refClk := ucieRefClock
     }
 
     Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1)
