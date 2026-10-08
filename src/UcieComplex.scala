@@ -3,7 +3,7 @@ package edu.berkeley.cs.iris
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.TLBusWrapperLocation
-import edu.berkeley.cs.uciedigital.tilelink.{UcieChipletLink, UcieTLParams}
+import edu.berkeley.cs.uciedigital.tilelink.UcieTLParams
 import testchipip.soc.{
   ChipletLinkParams,
   ChipletLinkWrapper,
@@ -80,27 +80,4 @@ object UciePort {
   def all(p: Parameters): Seq[UcieTLParams] = p(ChipletRoutingKey)
     .map(_.ports.collect { case UciePort(u) => u })
     .getOrElse(Nil)
-}
-
-/** The UCIe links the chiplet router built under `system`, in port order.
-  *
-  * `UcieChipletLink` gives the router no control node, so whoever builds the
-  * system attaches each link's `regNode` to a control bus. The router keeps its
-  * ports to itself, so they are found by walking the module tree.
-  */
-object UcieChipletLinks {
-  def apply(system: LazyModule)(implicit p: Parameters): Seq[UcieChipletLink] = {
-    def links(lm: LazyModule): Seq[UcieChipletLink] =
-      lm.getChildren.reverse.flatMap {
-        case link: UcieChipletLink => Seq(link)
-        case child                 => links(child)
-      }
-    val found = links(system)
-    require(
-      found.size == UciePort.all(p).size,
-      s"found ${found.size} UCIe links under the system, but the chiplet " +
-        s"router has ${UciePort.all(p).size} UCIe ports"
-    )
-    found
-  }
 }

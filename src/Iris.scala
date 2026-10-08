@@ -30,6 +30,7 @@ import freechips.rocketchip.prci._
 import freechips.rocketchip.devices.debug._
 import freechips.rocketchip.devices.tilelink.BootROMLocated
 import freechips.rocketchip.tilelink.{TLBuffer, TLFragmenter, TLWidthWidget}
+import edu.berkeley.cs.uciedigital.tilelink.UcieChipletLink
 import freechips.rocketchip.util._
 import sifive.blocks.inclusivecache.{InclusiveCachePortParameters}
 
@@ -67,9 +68,10 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
   // Each UCIe link's register port, on the chiplet router's control bus. The
   // router cannot attach these itself: each is a crossbar in front of UcieTL's
   // register blocks, not the bare register node it takes.
-  p(ChipletRoutingKey).foreach { routing =>
-    val cbus = system.locateTLBusWrapper(routing.controlBusWhere)
-    UcieChipletLinks(system).foreach { link =>
+  system.d2d_ports.foreach { ports =>
+    val cbus = system.locateTLBusWrapper(p(ChipletRoutingKey).get.controlBusWhere)
+    val links = ports.collect { case link: UcieChipletLink => link }
+    links.foreach { link =>
       cbus.coupleTo(s"${link.name}_control") {
         link.regNode := TLWidthWidget(cbus.beatBytes) := TLBuffer() :=
           TLFragmenter(cbus) := _
