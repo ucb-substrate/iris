@@ -156,12 +156,29 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
   ucieBypassClockSource.io.gate := false.B
   ucieBypassClock := ucieBypassClockSource.io.clk
 
-  val ucieDigitalBypassFreqMHz = 800
+  val ucieDigitalBypassFreqMHz = 500 // previously was 800
   val ucieDigitalBypassClock = Wire(Clock())
   val ucieDigitalBypassClockSource = Module(new ClockSourceAtFreqMHz(ucieDigitalBypassFreqMHz))
   ucieDigitalBypassClockSource.io.power := true.B
   ucieDigitalBypassClockSource.io.gate := false.B
   ucieDigitalBypassClock := ucieDigitalBypassClockSource.io.clk
+
+  // The sideband runs off its own bypass clock, at the rate ucie's own
+  // TileLinkSpec harness uses.
+  val ucieSidebandBypassFreqMHz = 800
+  val ucieSidebandBypassClock = Wire(Clock())
+  val ucieSidebandBypassClockSource = Module(new ClockSourceAtFreqMHz(ucieSidebandBypassFreqMHz))
+  ucieSidebandBypassClockSource.io.power := true.B
+  ucieSidebandBypassClockSource.io.gate := false.B
+  ucieSidebandBypassClock := ucieSidebandBypassClockSource.io.clk
+
+  // Reference for the clocking tile's PLLs.
+  val ucieRefFreqMHz = 100
+  val ucieRefClock = Wire(Clock())
+  val ucieRefClockSource = Module(new ClockSourceAtFreqMHz(ucieRefFreqMHz))
+  ucieRefClockSource.io.power := true.B
+  ucieRefClockSource.io.gate := false.B
+  ucieRefClock := ucieRefClockSource.io.clk
 
 
   implicit def view[A <: Data, B <: Data]
@@ -223,11 +240,13 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
     when(dtm_success || success) { chipSuccessReg := true.B }
     chipSuccesses(chipId) := chipSuccessReg
 
-    // The PHY bumps carry a single-ended mainband bypass clock; the PLL
-    // reference pair and its RDAC bias are no longer bumps.
+    // The PHY bumps carry single-ended mainband, digital and sideband bypass
+    // clocks plus the single-ended PLL reference.
     Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1).foreach { ucie =>
       ucie.phy.bypassClk := ucieBypassClock
       ucie.phy.digitalBypassClk := ucieDigitalBypassClock
+      ucie.phy.sidebandBypassClk := ucieSidebandBypassClock
+      ucie.phy.refClk := ucieRefClock
     }
 
     Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1)
@@ -437,6 +456,26 @@ class IrisSpec extends AnyFunSpec {
         binaryPaths = Seq(Utils.root / "software/ucie-loopback.riscv"),
         plusArgs = Seq(chip0PlusArgs),
         fast = true
+      )
+    }
+
+    it("should run ucie digital loopback test") {
+            implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_ucie_digital_loopback_test"
+
+      val chipid0 = 1
+      val chipidReg = p(ChipletRoutingKey).get.routerParams.tableAddress + p(ChipletRoutingKey).get.routerParams.tableEntries * 32
+      val chip0PlusArgs = Seq(
+        f"+init_write=0x${chipidReg}%08x:0x${chipid0}%08x",
+      )
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "software/ucie-digital-loopback.riscv"),
+        plusArgs = Seq(chip0PlusArgs),
+        fast = true,
+        debug = true
       )
     }
 
