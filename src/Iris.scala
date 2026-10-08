@@ -512,13 +512,15 @@ class IrisConfig(sim: Boolean = false)
               address = 0x200000,
               managerWhere = SBUS,
               numLanes = 16,
-              includeDefaultModels = true
+              includeDefaultModels = true,
+              sim = sim
             )),
             UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x208000,
               managerWhere = SBUS,
               numLanes = 16,
               includeDefaultModels = true,
+              sim = sim,
               moduleId = 1
             ))
         ))) ++
