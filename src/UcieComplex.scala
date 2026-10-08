@@ -2,11 +2,9 @@ package edu.berkeley.cs.iris
 
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.subsystem.{BaseSubsystem, TLBusWrapperLocation}
-import freechips.rocketchip.tilelink.{TLBuffer, TLWidthWidget}
-import edu.berkeley.cs.uciedigital.tilelink.{UcieChipletLink, UcieTLParams}
+import freechips.rocketchip.subsystem.TLBusWrapperLocation
+import edu.berkeley.cs.uciedigital.tilelink.UcieTLParams
 import testchipip.soc.{
-  CanHaveChipletRouting,
   ChipletLinkParams,
   ChipletLinkWrapper,
   ChipletLinkWrapperInstantiationLike,
@@ -82,41 +80,4 @@ object UciePort {
   def all(p: Parameters): Seq[UcieTLParams] = p(ChipletRoutingKey)
     .map(_.ports.collect { case UciePort(u) => u })
     .getOrElse(Nil)
-}
-
-/** Attaches the part of each UCIe link that the chiplet router can't.
-  *
-  * The router gives every port one control node, coupled to its control bus,
-  * and one clock. A UCIe link has two register blocks: the main one, on the
-  * clock its PHY makes, and the clock register block, which sets that clock up
-  * and so runs on the chip's. Only the main one goes through the router. This
-  * couples the clock register block to the same bus the same way, and clocks it
-  * from that bus, so its register port needs no crossing.
-  *
-  * The links are found by walking the subsystem's children, since the router
-  * keeps its ports to itself. Extending [[CanHaveChipletRouting]] makes sure
-  * they exist by the time this runs.
-  */
-trait CanHaveUcieClkRegs extends CanHaveChipletRouting { this: BaseSubsystem =>
-  p(ChipletRoutingKey).foreach { params =>
-    def links(lm: LazyModule): Seq[UcieChipletLink] =
-      lm.getChildren.reverse.flatMap {
-        case link: UcieChipletLink => Seq(link)
-        case child                 => links(child)
-      }
-    val ucieLinks = links(this)
-    require(
-      ucieLinks.size == UciePort.all(p).size,
-      s"found ${ucieLinks.size} UCIe links under the subsystem, but the " +
-        s"chiplet router has ${UciePort.all(p).size} UCIe ports"
-    )
-
-    val cbus = locateTLBusWrapper(params.controlBusWhere)
-    ucieLinks.foreach { link =>
-      link.ucie.chipDigitalClockNode := cbus.fixedClockNode
-      cbus.coupleTo(s"${link.name}_clk_control") {
-        link.ucie.clkRegNode := TLWidthWidget(cbus.beatBytes) := TLBuffer() := _
-      }
-    }
-  }
 }
