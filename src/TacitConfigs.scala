@@ -5,7 +5,7 @@ import org.chipsalliance.diplomacy.lazymodule.LazyModule
 import freechips.rocketchip.subsystem.{InSubsystem, RocketTileAttachParams, TilesLocated}
 import freechips.rocketchip.trace.{TraceCoreParams, TraceEncoderParams}
 import shuttle.common.ShuttleTileAttachParams
-import tacit.{TacitBPParams, TacitEncoder, TacitParallelEncoder}
+import tacit.{MPQueueImpl, TacitBPParams, TacitEncoder, TacitParallelEncoder}
 
 class WithTacitEncoder(
     encoderBaseAddr: BigInt = 0x03000000L,
@@ -52,7 +52,8 @@ class WithTacitEncoder(
 
 class WithTacitParallelEncoder(
     encoderBaseAddr: BigInt = 0x03000000L,
-    bufferDepth: Int = 16)
+    bufferDepth: Int = 16,
+    queueImpl: MPQueueImpl = MPQueueImpl.SRAM)
     extends Config((site, here, up) => {
   case TilesLocated(InSubsystem) => up(TilesLocated(InSubsystem), site).map {
     case tp: RocketTileAttachParams =>
@@ -63,7 +64,8 @@ class WithTacitParallelEncoder(
           buildEncoder = (p: Parameters) => LazyModule(new TacitParallelEncoder(
             new TraceCoreParams(nGroups = 1, xlen = xlen, iaddrWidth = xlen),
             bufferDepth = bufferDepth,
-            coreStages = 5)(p)),
+            coreStages = 5,
+            queueImpl = queueImpl)(p)),
           useArbiterMonitor = false,
           buildSinks = tp.tileParams.traceParams.map(_.buildSinks).getOrElse(Seq.empty)
         )),
@@ -80,7 +82,8 @@ class WithTacitParallelEncoder(
               xlen = xlen,
               iaddrWidth = xlen),
             bufferDepth = bufferDepth,
-            coreStages = 7)(p)),
+            coreStages = 7,
+            queueImpl = queueImpl)(p)),
           useArbiterMonitor = false,
           buildSinks = tp.tileParams.traceParams.map(_.buildSinks).getOrElse(Seq.empty)
         )),
