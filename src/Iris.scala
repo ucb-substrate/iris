@@ -44,7 +44,6 @@ class JTAGChipIO(hasReset: Boolean) extends Bundle {
 class IrisSystem(implicit p: Parameters)
     extends edu.berkeley.cs.chippy.ChippySystem
     with testchipip.soc.CanHaveChipletRouting
-    with CanHaveUcieClkRegs // UCIe clock registers, which the router can't attach
     with testchipip.soc.CanHaveSubsystemInjectors // Enables the subsystem injector API
     with testchipip.soc.CanHaveSwitchableOffchipBus // Enables optional off-chip-bus with interface-switch
     with testchipip.serdes.CanHavePeripheryTLSerial
@@ -54,6 +53,7 @@ class IrisSystem(implicit p: Parameters)
 
 class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
   val system = LazyModule(new IrisSystem)
+  UcieControl.connect(system)
   val clockGroupsSourceNode = ClockGroupSourceNode(
     Seq(ClockGroupSourceParameters())
   )
@@ -479,32 +479,23 @@ class IrisConfig(sim: Boolean = false)
           routerParams = testchipip.soc.OffchipRouterParams(tableEntries = 4),
           ports = Seq(
             // PD hardens the two UCIe links together, so UcieComplexPort puts
-            // both instances inside one UcieComplex module. Their PHYs differ
-            // in their lane clock distribution: the analog IP's clock DEF gives
-            // each link a buffered clock tree laid out for its own bump field --
-            // link 0's in the canonical orientation, link 1's turned 90 degrees
-            // -- and the netlist of that tree is what its PHY instantiates
-            // outside simulation. So each link is its own module, `moduleId` 0
-            // and 1. Each link also has its own high-speed and digital bypass
-            // clock bumps.
+            // both instances inside one UcieComplex module. Each link is still
+            // its own module, `moduleId` 0 and 1, so that a physical design can
+            // give each the lane clock distribution network laid out for its
+            // own bump field (see `ClkDistLayout`). Each link also has its own
+            // high-speed and digital bypass clock bumps.
             UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x200000,
               managerWhere = SBUS,
               numLanes = 16,
-              includeDefaultModels = true,
-              clkDistLayout =
-                if (sim) edu.berkeley.cs.uciedigital.phy.macros.clocking.ClkDistLayout.Behavioral
-                else edu.berkeley.cs.uciedigital.phy.macros.clocking.ClkDistLayout.Buffered("r0")
+              includeDefaultModels = true
             )),
             UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x208000,
               managerWhere = SBUS,
               numLanes = 16,
               includeDefaultModels = true,
-              moduleId = 1,
-              clkDistLayout =
-                if (sim) edu.berkeley.cs.uciedigital.phy.macros.clocking.ClkDistLayout.Behavioral
-                else edu.berkeley.cs.uciedigital.phy.macros.clocking.ClkDistLayout.Buffered("r90")
+              moduleId = 1
             ))
         ))) ++
         new WithIrisUncore(sim)

@@ -34,6 +34,7 @@ import sifive.blocks.inclusivecache.{InclusiveCachePortParameters}
 
 class TinyIrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
   val system = LazyModule(new IrisSystem)
+  UcieControl.connect(system)
   val clockGroupsSourceNode = ClockGroupSourceNode(
     Seq(ClockGroupSourceParameters())
   )
