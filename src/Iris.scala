@@ -146,7 +146,7 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
 // IrisConfig and IrisDryRunConfig differ only in
 //   * the SBUS NoC node mapping, and
 //   * which optional blocks are present: the Rocket Saturn DMA vector unit, the
-//     two Shuttle tiles with their Saturn OPU, and the UCIe chiplet router.
+//     Shuttle tile with its Saturn OPU, and the UCIe chiplet router.
 // Everything else is identical and lives in the fragments below.
 //
 // These are several fragments rather than one block because CDE composition is
@@ -156,8 +156,8 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
 //     sit to the LEFT of WithIrisRocketCore.
 //   * The Shuttle fragments must sit to the RIGHT of WithIrisRocketCore. Tile
 //     ids are handed out from `up(NumTiles)`, so this ordering is what makes the
-//     Shuttle tiles harts 0-1 and Rocket hart 2 -- which the NoC mapping keys
-//     off by name ("Core 0 ICache", "Core 2 DCache").
+//     Shuttle tile hart 0 and Rocket hart 1 -- which the NoC mapping keys
+//     off by name ("Core 0 ICache", "Core 1 DCache").
 // ============================================================================
 
 /** SBUS NoC parameters. Only the node mapping differs between the two chips;
