@@ -20,8 +20,10 @@ int main(void) {
 
   setup_ucie(UCIE0_REG_BASE);
   reg_write64(UCIE0_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
+  reset_datapath(UCIE0_REG_BASE);
   setup_ucie(UCIE1_REG_BASE);
   reg_write64(UCIE1_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
+  reset_datapath(UCIE1_REG_BASE);
 
   int next = (chip_id % 4) + 1;
   int prev = ((chip_id + 2) % 4) + 1;

@@ -57,6 +57,7 @@ void __main(void)
     // ============================================================
     setup_ucie(UCIE0_REG_BASE);
     reg_write64(UCIE0_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
+    reset_datapath(UCIE0_REG_BASE);
     program_router(0, 2, 0);
 
     uint64_t peer_chip_id = 2;
@@ -90,6 +91,7 @@ void __main(void)
     // ============================================================
     setup_ucie(UCIE1_REG_BASE);
     reg_write64(UCIE1_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
+    reset_datapath(UCIE1_REG_BASE);
     program_router(0, 1, 1);
 
     *done_flag = 0;

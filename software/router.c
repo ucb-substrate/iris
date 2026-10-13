@@ -50,6 +50,7 @@ int main(void) {
   if (chip_id == 1) {
     setup_ucie(UCIE0_REG_BASE);
     reg_write64(UCIE0_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
+    reset_datapath(UCIE0_REG_BASE);
     printf("Set up UCIe 0 for chip 1\n");
     program_router(0, 2, 0); // Chip 1 UCIe0 -> Chip 2 UCIe1
     rw_mem(OFFCHIP_OFFSET * 2);
@@ -57,6 +58,7 @@ int main(void) {
   } else {
     setup_ucie(UCIE1_REG_BASE);
     reg_write64(UCIE1_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
+    reset_datapath(UCIE1_REG_BASE);
     printf("Set up UCIe 1 for chip 2\n");
     program_router(0, 1, 1); // Chip 2 UCIe1 -> Chip 1 UCIe0
     rw_mem(OFFCHIP_OFFSET * 1);
