@@ -36,7 +36,8 @@ static void branch_workload(void)
 
 int main(void)
 {
-  for (unsigned tile = 0; tile < 3; tile++) {
+  // One encoder per tile: the Shuttle tile and Rocket.
+  for (unsigned tile = 0; tile < 2; tile++) {
     tacit_select_always(tile);
   }
   branch_workload();

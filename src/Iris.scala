@@ -29,6 +29,8 @@ import freechips.rocketchip.subsystem._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.devices.debug._
 import freechips.rocketchip.devices.tilelink.BootROMLocated
+import freechips.rocketchip.tilelink.{TLBuffer, TLFragmenter, TLWidthWidget}
+import edu.berkeley.cs.uciedigital.tilelink.UcieChipletLink
 import freechips.rocketchip.util._
 import sifive.blocks.inclusivecache.{InclusiveCachePortParameters}
 
@@ -63,6 +65,20 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
     .locateTLBusWrapper(p(ExportDebug).slaveWhere)
     .fixedClockNode
   def debugClockBundle = debugClockSinkNode.in.head._1
+
+  // Each UCIe link's register port, on the chiplet router's control bus. The
+  // router cannot attach these itself: each is a crossbar in front of UcieTL's
+  // register blocks, not the bare register node it takes.
+  system.d2d_ports.foreach { ports =>
+    val cbus = system.locateTLBusWrapper(p(ChipletRoutingKey).get.controlBusWhere)
+    val links = ports.collect { case link: UcieChipletLink => link }
+    links.foreach { link =>
+      cbus.coupleTo(s"${link.name}_control") {
+        link.regNode := TLWidthWidget(cbus.beatBytes) := TLBuffer() :=
+          TLFragmenter(cbus) := _
+      }
+    }
+  }
 
   override lazy val module = new IrisTopImpl
   class IrisTopImpl extends LazyRawModuleImp(this) with DontTouch {
@@ -131,7 +147,7 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
 // IrisConfig and IrisDryRunConfig differ only in
 //   * the SBUS NoC node mapping, and
 //   * which optional blocks are present: the Rocket Saturn DMA vector unit, the
-//     two Shuttle tiles with their Saturn OPU, and the UCIe chiplet router.
+//     Shuttle tile with its Saturn OPU, and the UCIe chiplet router.
 // Everything else is identical and lives in the fragments below.
 //
 // These are several fragments rather than one block because CDE composition is
@@ -141,8 +157,8 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
 //     sit to the LEFT of WithIrisRocketCore.
 //   * The Shuttle fragments must sit to the RIGHT of WithIrisRocketCore. Tile
 //     ids are handed out from `up(NumTiles)`, so this ordering is what makes the
-//     Shuttle tiles harts 0-1 and Rocket hart 2 -- which the NoC mapping keys
-//     off by name ("Core 0 ICache", "Core 2 DCache").
+//     Shuttle tile hart 0 and Rocket hart 1 -- which the NoC mapping keys
+//     off by name ("Core 0 ICache", "Core 1 DCache").
 // ============================================================================
 
 /** SBUS NoC parameters. Only the node mapping differs between the two chips;

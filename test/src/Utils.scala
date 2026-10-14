@@ -52,7 +52,7 @@ verilator \\
   -CFLAGS "$$CXXFLAGS -O3 -std=c++17 -DVERILATOR -I$$RISCV/include" \\
   -LDFLAGS "$$LDFLAGS -L$$RISCV/lib -Wl,-rpath,$$RISCV/lib -lriscv -lfesvr" \\
   -F ${sourceFilesList.toString}
-script -f -c "./simulation </dev/null 2> >(spike-dasm > simulation.out)" simulation.log
+script -e -f -c "./simulation </dev/null 2> >(spike-dasm > simulation.out)" simulation.log
 """
     )
     path.toIO.setExecutable(true)
@@ -89,7 +89,7 @@ vcs \\
   +define+layer$$Verification$$Cover$$Temporal \\
   +define+VCS +define+FSDB +define+RANDOMIZE_MEM_INIT +define+RANDOMIZE_REG_INIT +define+RANDOMIZE_GARBAGE_ASSIGN +define+RANDOMIZE_INVALID_ASSIGN$debugCompileFlags \\
   -o simulation -Mdir=vcs-sources
-script -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_dir=${dramsim_ini.toString}${loadmem.map(p => s" +loadmem=${p.toString}").getOrElse("")}$debugRuntimeFlag +permissive-off placeholder-binary </dev/null 2> >(spike-dasm > simulation.out)" simulation.log
+script -e -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_dir=${dramsim_ini.toString}${loadmem.map(p => s" +loadmem=${p.toString}").getOrElse("")}$debugRuntimeFlag +permissive-off placeholder-binary </dev/null 2> >(spike-dasm > simulation.out)" simulation.log
 """
     )
     path.toIO.setExecutable(true)
@@ -162,5 +162,19 @@ script -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_dir=
       "/bin/bash",
       simScript
     ).call(stdout = os.Inherit, stderr = os.Inherit, cwd = simDir)
+
+    // The simulator's exit status does not say whether the test passed: VCS
+    // ends with status 0 after a `$fatal`, whether from SimTop's timeout or
+    // from a failed assertion. SimTop prints its success line only when the
+    // chips report success, so the log decides it.
+    val simLog = os.read(simDir / "simulation.log")
+    val failure =
+      Seq("Assertion failed", "Fatal:", "Test timed out!").find(simLog.contains)
+    assert(
+      failure.isEmpty && simLog.contains("Test completed successfully."),
+      failure.fold("simulation ended without reporting success")(f =>
+        s"simulation log reports \"$f\""
+      ) + s"; see ${simDir / "simulation.log"}"
+    )
   }
 }

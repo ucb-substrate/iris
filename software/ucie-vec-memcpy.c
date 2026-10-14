@@ -1,7 +1,7 @@
 // two-chip UCIe RVV memcpy test
 //
-// hart 0/1 are the Shuttle/OPU cores 
-// hart 2 is the Rocket tile with Saturn DMA
+// hart 0 is the Shuttle/OPU core
+// hart 1 is the Rocket tile with Saturn DMA
 // BENCH_HART_ID picks which hart runs this test
 
 #include <stdint.h>
@@ -24,10 +24,10 @@
 #define COPY_BYTES 256
 #endif
 
-// Which hart runs the test. Hart 2 is the Saturn-DMA-only rocket tile added
+// Which hart runs the test. Hart 1 is the Saturn-DMA-only rocket tile added
 // by IrisConfig's "Saturn DMA" line. Tunable: -DBENCH_HART_ID=<n>.
 #ifndef BENCH_HART_ID
-#define BENCH_HART_ID 2
+#define BENCH_HART_ID 1
 #endif
 
 // Aligned to the 32-byte beat so the natural-alignment path is exercised.
@@ -57,6 +57,7 @@ void __main(void)
     // ============================================================
     setup_ucie(UCIE0_REG_BASE);
     reg_write64(UCIE0_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
+    reset_datapath(UCIE0_REG_BASE);
     program_router(0, 2, 0);
 
     uint64_t peer_chip_id = 2;
@@ -90,6 +91,7 @@ void __main(void)
     // ============================================================
     setup_ucie(UCIE1_REG_BASE);
     reg_write64(UCIE1_REG_BASE + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_TL);
+    reset_datapath(UCIE1_REG_BASE);
     program_router(0, 1, 1);
 
     *done_flag = 0;
