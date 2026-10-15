@@ -55,7 +55,6 @@ class IrisSystem(implicit p: Parameters)
 
 class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
   val system = LazyModule(new IrisSystem)
-  UcieControl.connect(system)
   val clockGroupsSourceNode = ClockGroupSourceNode(
     Seq(ClockGroupSourceParameters())
   )

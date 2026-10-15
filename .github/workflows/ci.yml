@@ -120,16 +120,18 @@ jobs:
             -- -t "TinyIris should generate valid System Verilog for TinyIris"
 
       # PD hardens the two UCIe blocks as one hierarchical block, so both links
-      # have to sit inside a single UcieComplex module and share one UcieTL.
-      # Giving a port its own UcieTLParams.moduleId splits them again, and
-      # nothing else in the flow would notice.
-      - name: Check the UCIe blocks are grouped and deduped
+      # have to sit inside a single UcieComplex module. Each link is still its
+      # own UcieTL -- UcieTLParams.moduleId 0 and 1 -- so that PD can give each
+      # the lane clock distribution network laid out for its own bump field.
+      # Dropping a port's moduleId folds them back into one module, and nothing
+      # else in the flow would notice.
+      - name: Check the UCIe blocks are grouped, with one UcieTL per link
         run: |
           out=build/Iris_should_generate_valid_System_Verilog
-          n=$(grep -lE '^module UcieTL(_[A-Za-z0-9]+)?\(' "$out"/*.sv | wc -l)
-          if [ "$n" -ne 1 ]; then
-            echo "::error::expected 1 UcieTL module in $out, found $n"
-            grep -hE '^module UcieTL(_[A-Za-z0-9]+)?\(' "$out"/*.sv || true
+          tls=$(grep -hoE '^module UcieTL(_[A-Za-z0-9]+)?\(' "$out"/*.sv \
+            | sed -E 's/^module //; s/\($//' | sort | paste -sd' ' -)
+          if [ "$tls" != "UcieTL UcieTL_1" ]; then
+            echo "::error::expected UcieTL modules UcieTL and UcieTL_1 in $out, found: ${tls:-none}"
             exit 1
           fi
           if [ ! -f "$out/UcieComplex.sv" ]; then
