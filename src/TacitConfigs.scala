@@ -65,7 +65,11 @@ class WithTacitParallelEncoder(
             new TraceCoreParams(nGroups = 1, xlen = xlen, iaddrWidth = xlen),
             bufferDepth = bufferDepth,
             coreStages = 5,
-            queueImpl = queueImpl)(p)),
+            queueImpl = queueImpl,
+            // Retire groups still reaching the queue after io.stall: ex/mem/wb
+            // past the decode gate, plus one interrupt that bypasses it (4),
+            // plus 2 cycles of margin. coreStages is unused by the SRAM queue.
+            stallQuiescenceCycles = 6)(p)),
           useArbiterMonitor = false,
           buildSinks = tp.tileParams.traceParams.map(_.buildSinks).getOrElse(Seq.empty)
         )),
@@ -83,7 +87,14 @@ class WithTacitParallelEncoder(
               iaddrWidth = xlen),
             bufferDepth = bufferDepth,
             coreStages = 7,
-            queueImpl = queueImpl)(p)),
+            queueImpl = queueImpl,
+            // Retire groups still reaching the queue after io.stall: ex/mem/com
+            // past the register-read gate (3), plus 2 cycles of margin.
+            stallQuiescenceCycles = 5,
+            // At most one control-flow packet per commit group: one brjmp per
+            // issue group, traps and xRET only on lane 0 (needs the shuttle
+            // lane-0 trace exception gate).
+            maxPacketsPerCycle = Some(1))(p)),
           useArbiterMonitor = false,
           buildSinks = tp.tileParams.traceParams.map(_.buildSinks).getOrElse(Seq.empty)
         )),
