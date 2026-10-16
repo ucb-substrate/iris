@@ -51,12 +51,6 @@ int main(void) {
 
   printf("Got chip ID: %d\n", chip_id);
 
-  // setup_ucie_digital() brings up the PHY, hands both bands to the real
-  // UCIe digital controller (controllerSel = ucie), and blocks until spec
-  // link training completes. Unlike ucie-loopback.c's setup_ucie() +
-  // UCIE_BAND_MODE_TL, which bypasses UcieDigitalTop and frames TileLink
-  // directly onto the mainband, requests here are carried by the trained
-  // link through the real protocol layer/D2D adapter/logical PHY stack.
   printf("Setting up UCIe0 (digital controller)\n");
   setup_ucie_digital(UCIE0_REG_BASE);
   printf("Setting up UCIe1 (digital controller)\n");
