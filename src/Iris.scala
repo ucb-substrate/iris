@@ -242,6 +242,8 @@ class WithIrisBusTweaks
   */
 class WithIrisRocketCore
     extends Config(
+      // Decouple Rocket Core from uncore freq
+      new freechips.rocketchip.rocket.WithAsynchronousCDCs(4, 3) ++
       // ICache
       new freechips.rocketchip.rocket.WithL1ICacheWays(2) ++
         new freechips.rocketchip.rocket.WithL1ICacheSets(128) ++
@@ -347,7 +349,8 @@ class WithIrisUncore(sim: Boolean = false)
               "cbus",
               "system_bus",
               "fbus",
-              "pbus"
+              "pbus",
+              "d2d"
             ),
             Nil
           )
@@ -468,7 +471,7 @@ class IrisConfig(sim: Boolean = false)
         // ==================================
         // Shuttle Tile + Saturn Cores
         // ==================================
-        // new shuttle.common.WithAsynchronousShuttleTiles(3, 3, location=InCluster(0)) ++ // Add async crossings between RocketTile and uncore
+        new shuttle.common.WithAsynchronousShuttleTiles(4, 3) ++ // Add async crossings between RocketTile and uncore
         new saturn.shuttle.WithShuttleVectorUnit(
           256,
           128,
@@ -476,7 +479,7 @@ class IrisConfig(sim: Boolean = false)
         ) ++
         new shuttle.common.WithShuttleTileBeatBytes(16) ++
         new shuttle.common.WithTCM(size = 128L << 10, banks = 2) ++
-        new shuttle.common.WithShuttleTileBoundaryBuffers() ++
+        // new shuttle.common.WithShuttleTileBoundaryBuffers() ++
         // ICache
         new shuttle.common.WithL1ICacheWays(2) ++
         new shuttle.common.WithL1ICacheSets(64) ++
