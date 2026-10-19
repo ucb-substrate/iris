@@ -166,13 +166,12 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
   */
 object IrisNoCParams {
   def apply(
-      nodeMapping: constellation.protocol.DiplomaticNetworkNodeMapping,
-      nNodes: Int = 7
+      nodeMapping: constellation.protocol.DiplomaticNetworkNodeMapping
   ): constellation.protocol.SplitACDxBETLNoCParams =
     constellation.protocol.SplitACDxBETLNoCParams(
       nodeMapping,
       acdNoCParams = NoCParams(
-        topology = BidirectionalTorus1D(nNodes),
+        topology = BidirectionalTorus1D(7),
         channelParamGen = (a, b) =>
           UserChannelParams(
             Seq.fill(6) { UserVirtualChannelParams(5) },
@@ -187,7 +186,7 @@ object IrisNoCParams {
         )
       ),
       beNoCParams = NoCParams(
-        topology = UnidirectionalTorus1D(nNodes),
+        topology = UnidirectionalTorus1D(7),
         channelParamGen = (a, b) =>
           UserChannelParams(
             Seq.fill(4) { UserVirtualChannelParams(5) },
@@ -442,38 +441,33 @@ class IrisConfig(sim: Boolean = false)
         // Set up buses
         // ==================================
         new constellation.soc.WithSbusNoC(
-          // Eight nodes, numbered in the order the ring runs round the NoC hub
-          // in IrisTop's floorplan (`iris_hierarchy` in vlsi/src/iris.rs), so
-          // every link joins physical neighbours: the two Shuttle tiles and
-          // Rocket between them on the hub's west side, L2 banks 2/3 on its
-          // north side, PBUS/debug at the expansion channel's mouth, UCIe on
-          // its east side, the scratchpads in its middle and L2 banks 0/1 on
-          // its south side. The L2 is split over two nodes, one per side, so
-          // each tile is one hop from half of it and no router ejects all of
-          // the L2 traffic.
           IrisNoCParams(
             constellation.protocol.DiplomaticNetworkNodeMapping(
+              // Numbered in the order the ring runs round IrisTop's NoC channel
+              // (`iris_hierarchy` in vlsi/src/iris.rs), so each link joins
+              // physical neighbours: Shuttle tile 0 at its top, the
+              // scratchpads, the L2, Shuttle tile 1 at its bottom, PBUS/debug
+              // (no block), Rocket at the top of the east column, UCIe.
               inNodeMapping = ListMap(
-                "Core 0 ICache" -> 0, // Shuttle tile 0
-                "Core 2 DCache" -> 1, // RocketTile
-                "Core 1 ICache" -> 2, // Shuttle tile 1
+                "Core 0 ICache" -> 0, // Shuttle tile 0 (top)
                 "debug[0]" -> 4, // Front BUS
-                "ucie-client" -> 5
+                "Core 1 ICache" -> 3, // Shuttle tile 1 (bottom)
+                "Core 2 DCache" -> 5, // RocketTile
+                "ucie-client" -> 6
               ),
               outNodeMapping = ListMap(
-                "Core 0 TCM" -> 0, // Shuttle tile 0 TCM
-                "Core 1 TCM" -> 2, // Shuttle tile 1 TCM
-                "serdesser[2]|" -> 3, // L2 bank 2 (north)
-                "serdesser[3]|" -> 3, // L2 bank 3 (north)
+                "Core 0 TCM" -> 0, // Shuttle tile 0 TCM (top)
+                "Core 1 TCM" -> 3, // Shuttle tile 1 TCM (bottom)
                 "ctrls[0]" -> 4, // PBUS
-                "ucie[0]" -> 5, // UCIe 0
-                "ram[0]|" -> 6, // SBUS scratchpad bank 0
-                "ram[1]|" -> 6, // SBUS scratchpad bank 1
-                "serdesser[0]|" -> 7, // L2 bank 0 (south)
-                "serdesser[1]|" -> 7 // L2 bank 1 (south)
+                "serdesser[2]|" -> 2, // L2
+                "serdesser[3]|" -> 2, // L2
+                "serdesser[1]|" -> 2, // L2
+                "serdesser[0]|" -> 2, // L2
+                "ucie[0]" -> 6, // UCie 0
+                "ram[0]|" -> 1, // SBUS SPAD (?)
+                "ram[1]|" -> 1 // Also SBUS SPAD?
               )
-            ),
-            nNodes = 8
+            )
           ),
           inlineNoC = true
         ) ++
