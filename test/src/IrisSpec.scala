@@ -62,11 +62,19 @@ class ClockSourceAtFreqMHz(val freqMHz: Double)
   )
 }
 
-class SimTop(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]] = Seq.empty, fast: Boolean = false)(implicit
+class SimTop(
+    nChips: Int,
+    binaryPaths: Seq[Path],
+    plusArgs: Seq[Seq[String]] = Seq.empty,
+    fast: Boolean = false,
+    serialTLFreqMHz: Option[Double] = None,
+    memTrafficMonitor: Boolean = false // experiments only, see IrisExperiments.scala
+)(implicit
     p: Parameters
 ) extends RawModule {
   val driver = Module(new TestDriver)
-  val harness = Module(new TestHarness(nChips, binaryPaths, plusArgs, fast))
+  val harness = Module(new TestHarness(nChips, binaryPaths, plusArgs, fast, serialTLFreqMHz))
+  if (memTrafficMonitor) Module(new MemTrafficMonitor)
   harness.io.reset := driver.reset
   driver.success := harness.io.success
 }
@@ -120,7 +128,18 @@ class TestDriver extends ExtModule {
   )
 }
 
-class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]] = Seq.empty, fast: Boolean = false)(implicit
+/** @param serialTLFreqMHz
+  *   clock for the serial-TL link and the off-chip memory model behind it. None
+  *   keeps the link on the 500 MHz chip clock; on silicon it is an external
+  *   clock, typically much slower than the core.
+  */
+class TestHarness(
+    nChips: Int,
+    binaryPaths: Seq[Path],
+    plusArgs: Seq[Seq[String]] = Seq.empty,
+    fast: Boolean = false,
+    serialTLFreqMHz: Option[Double] = None
+)(implicit
     p: Parameters
 ) extends RawModule {
   require(nChips >= 1, s"nChips must be at least 1, got $nChips")
@@ -156,6 +175,7 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
   val ucieSidebandBypassClock = freeRunningClock(800)
   // The clocking tile's PLL reference, as in the UCIe repo's own harness.
   val ucieRefClock = freeRunningClock(100)
+  val serialTLClock = serialTLFreqMHz.map(freeRunningClock).getOrElse(digitalClock)
 
   implicit def view[A <: Data, B <: Data]
       : DataView[testchipip.tsi.TSIIO, TSIIO] =
@@ -195,22 +215,26 @@ class TestHarness(nChips: Int, binaryPaths: Seq[Path], plusArgs: Seq[Seq[String]
       dtm_success
     )
 
-    chiptop.serial_tl.clock_in := digitalClock
+    chiptop.serial_tl.clock_in := serialTLClock
 
-    val success = if (fast) {
-      val ram = Module(LazyModule(new FastRAM(chiptop_lazy.system.serdessers(0), p(SerialTLKey)(0), chipId = chipId)(
-        chiptop_lazy.system.serdessers(0).p
-      )).module)
-      ram.io.ser.in <> chiptop.serial_tl.out
-      chiptop.serial_tl.in <> ram.io.ser.out
-      SimTSI.connect(ram.io.tsi.map(_.viewAs[TSIIO]), digitalClock, io.reset, binaryPath, allPlusArgs)
-    } else {
-      val ram = Module(LazyModule(new SerialRAM(chiptop_lazy.system.serdessers(0), p(SerialTLKey)(0))(
-        chiptop_lazy.system.serdessers(0).p
-      )).module)
-      ram.io.ser.in <> chiptop.serial_tl.out
-      chiptop.serial_tl.in <> ram.io.ser.out
-      SimTSI.connect(ram.io.tsi.map(_.viewAs[TSIIO]), digitalClock, io.reset, binaryPath, allPlusArgs)
+    // The memory model and TSI bridge sit on the far side of the link, so they
+    // run on the link clock.
+    val success = withClockAndReset(serialTLClock, io.reset) {
+      if (fast) {
+        val ram = Module(LazyModule(new FastRAM(chiptop_lazy.system.serdessers(0), p(SerialTLKey)(0), chipId = chipId)(
+          chiptop_lazy.system.serdessers(0).p
+        )).module)
+        ram.io.ser.in <> chiptop.serial_tl.out
+        chiptop.serial_tl.in <> ram.io.ser.out
+        SimTSI.connect(ram.io.tsi.map(_.viewAs[TSIIO]), serialTLClock, io.reset, binaryPath, allPlusArgs)
+      } else {
+        val ram = Module(LazyModule(new SerialRAM(chiptop_lazy.system.serdessers(0), p(SerialTLKey)(0))(
+          chiptop_lazy.system.serdessers(0).p
+        )).module)
+        ram.io.ser.in <> chiptop.serial_tl.out
+        chiptop.serial_tl.in <> ram.io.ser.out
+        SimTSI.connect(ram.io.tsi.map(_.viewAs[TSIIO]), serialTLClock, io.reset, binaryPath, allPlusArgs)
+      }
     }
     val chipSuccessReg = withReset(io.reset.asAsyncReset)(RegInit(false.B))
     when(dtm_success || success) { chipSuccessReg := true.B }
@@ -480,6 +504,20 @@ class IrisSpec extends AnyFunSpec {
         nChips = 1,
         binaryPaths = Seq(Utils.root / "software/tacit-dma.riscv"),
         fast = true
+      )
+    }
+
+    it("should run tacit dma trace workload on the tapeout serial TL") {
+      // Tapeout config (16b serial TL, no TL monitors) with the link at 100 MHz.
+      implicit val p = new IrisConfig(sim = false)
+      val workDir = Utils.buildRoot / "Iris_should_run_tacit_dma_trace_tapeout_serial_tl"
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "software/tacit-dma.riscv"),
+        fast = true,
+        serialTLFreqMHz = Some(100)
       )
     }
   }

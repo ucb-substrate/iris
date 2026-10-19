@@ -51,7 +51,9 @@ static void tacit_stop_trace(unsigned tile)
 {
   uintptr_t ctrl = TRACE_CTRL_BASE(tile);
   reg_write32(ctrl + TRACE_CTRL_CONTROL, 1);
-  delay_cycles(1024);
+  // The DMA writes 64-byte bursts and only flushes a partial one after 4096 idle
+  // cycles, so wait at least that long before reading the byte count.
+  delay_cycles(4096);
   __asm__ volatile ("fence" ::: "memory");
 }
 
