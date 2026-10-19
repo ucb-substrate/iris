@@ -166,12 +166,13 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
   */
 object IrisNoCParams {
   def apply(
-      nodeMapping: constellation.protocol.DiplomaticNetworkNodeMapping
+      nodeMapping: constellation.protocol.DiplomaticNetworkNodeMapping,
+      nNodes: Int = 7
   ): constellation.protocol.SplitACDxBETLNoCParams =
     constellation.protocol.SplitACDxBETLNoCParams(
       nodeMapping,
       acdNoCParams = NoCParams(
-        topology = BidirectionalTorus1D(7),
+        topology = BidirectionalTorus1D(nNodes),
         channelParamGen = (a, b) =>
           UserChannelParams(
             Seq.fill(6) { UserVirtualChannelParams(5) },
@@ -186,7 +187,7 @@ object IrisNoCParams {
         )
       ),
       beNoCParams = NoCParams(
-        topology = UnidirectionalTorus1D(7),
+        topology = UnidirectionalTorus1D(nNodes),
         channelParamGen = (a, b) =>
           UserChannelParams(
             Seq.fill(4) { UserVirtualChannelParams(5) },
@@ -204,12 +205,20 @@ object IrisNoCParams {
     )
 }
 
-/** Tacit trace encoder and trace sinks. */
-class WithIrisTacitTrace
+/** Tacit trace encoder and trace sinks.
+  *
+  * The trace arbiter monitor (a `TraceSinkMonitor` blackbox per tile, dumping
+  * the encoded trace to a file) is simulation-only, so it is left out unless
+  * `sim`. Its whole body is `ifndef SYNTHESIS`, so the netlist does not change,
+  * but its `FILE_NAME` parameter is the tile's unique name: with it, two
+  * otherwise identical tiles elaborate as two modules (`ShuttleTile` and
+  * `ShuttleTile_1`), which PD would have to harden separately.
+  */
+class WithIrisTacitTrace(sim: Boolean = false)
     extends Config(
       new tacit.WithTraceSinkDMA(1) ++
         new tacit.WithTraceSinkAlways(0) ++
-        new WithTacitTraceArbiterMonitor ++
+        (if (sim) new WithTacitTraceArbiterMonitor else Parameters.empty) ++
         new WithTacitParallelEncoder
     )
 
@@ -427,32 +436,44 @@ class WithIrisUncore(sim: Boolean = false)
   */
 class IrisConfig(sim: Boolean = false)
     extends Config(
-      new WithIrisTacitTrace ++
+      new WithIrisTacitTrace(sim) ++
 
         // ==================================
         // Set up buses
         // ==================================
         new constellation.soc.WithSbusNoC(
+          // Eight nodes, numbered in the order the ring runs round the NoC hub
+          // in IrisTop's floorplan (`iris_hierarchy` in vlsi/src/iris.rs), so
+          // every link joins physical neighbours: the two Shuttle tiles and
+          // Rocket between them on the hub's west side, L2 banks 2/3 on its
+          // north side, PBUS/debug at the expansion channel's mouth, UCIe on
+          // its east side, the scratchpads in its middle and L2 banks 0/1 on
+          // its south side. The L2 is split over two nodes, one per side, so
+          // each tile is one hop from half of it and no router ejects all of
+          // the L2 traffic.
           IrisNoCParams(
             constellation.protocol.DiplomaticNetworkNodeMapping(
               inNodeMapping = ListMap(
-                "Core 0 ICache" -> 0, // Shuttle (left)
-                "debug[0]" -> 6, // Front BUS
-                "Core 1 DCache" -> 4, // RocketTile
+                "Core 0 ICache" -> 0, // Shuttle tile 0
+                "Core 2 DCache" -> 1, // RocketTile
+                "Core 1 ICache" -> 2, // Shuttle tile 1
+                "debug[0]" -> 4, // Front BUS
                 "ucie-client" -> 5
               ),
               outNodeMapping = ListMap(
-                "Core 0 TCM" -> 0, // Shuttle TCM (left)
-                "ctrls[0]" -> 6, // PBUS
-                "serdesser[2]|" -> 3, // L2   (top)
-                "serdesser[3]|" -> 3, // L2   (top)
-                "serdesser[1]|" -> 3, // L2   (bottom)
-                "serdesser[0]|" -> 3, // L2   (bottom)
-                "ucie[0]" -> 5, // UCie 0
-                "ram[0]|" -> 1, // SBUS SPAD (?)
-                "ram[1]|" -> 1 // Also SBUS SPAD?
+                "Core 0 TCM" -> 0, // Shuttle tile 0 TCM
+                "Core 1 TCM" -> 2, // Shuttle tile 1 TCM
+                "serdesser[2]|" -> 3, // L2 bank 2 (north)
+                "serdesser[3]|" -> 3, // L2 bank 3 (north)
+                "ctrls[0]" -> 4, // PBUS
+                "ucie[0]" -> 5, // UCIe 0
+                "ram[0]|" -> 6, // SBUS scratchpad bank 0
+                "ram[1]|" -> 6, // SBUS scratchpad bank 1
+                "serdesser[0]|" -> 7, // L2 bank 0 (south)
+                "serdesser[1]|" -> 7 // L2 bank 1 (south)
               )
-            )
+            ),
+            nNodes = 8
           ),
           inlineNoC = true
         ) ++
@@ -485,18 +506,12 @@ class IrisConfig(sim: Boolean = false)
         // new shuttle.common.WithL1DCacheSets(256) ++
         new shuttle.common.WithL1DCacheBanks(1) ++
         new shuttle.common.WithL1DCacheTagBanks(1) ++
-        // ONE Shuttle tile. Two of them do not fit: each carries an 8x8
-        // OuterProductUnit (dLen 256 -> 64 OuterProductClusters), and the
-        // cluster alone measures ~15.7k um^2 of cells, so one OPU array is
-        // ~1.6mm^2 of die against a 6.1mm^2 core that also has to hold two
-        // 1mm^2 UcieTL links, the L2, Rocket, the scratchpads and the uncore.
-        // See `iris_hierarchy` in vlsi/src/lib.rs for the area budget the
-        // floorplan is built to.
-        //
-        // Node 2 of the SBUS NoC torus, which the second tile used, is left
-        // unmapped above; the tile ids shift with the tile count, so Rocket is
-        // "Core 1" here where two Shuttle tiles made it "Core 2".
-        new shuttle.common.WithNShuttleCores(1) ++
+        // Two Shuttle tiles, harts 0 and 1, so Rocket is "Core 2" in the NoC
+        // mapping above. Each carries a 4x4 OuterProductCluster array. They
+        // must elaborate as ONE module for PD to harden a single ShuttleTile:
+        // `WithIrisTacitTrace` keeps the per-tile trace monitor, the only
+        // thing that differed between them, out of non-sim builds.
+        new shuttle.common.WithNShuttleCores(2) ++
 
         // Chiplet Router with two D2D SerialTL ports and two D2D UCIe ports
         new testchipip.soc.WithChipletRouting(testchipip.soc.ChipletRoutingParams(
@@ -602,7 +617,7 @@ class IrisDryRunTop(implicit p: Parameters) extends LazyModule with BindingScope
   */
 class IrisDryRunConfig(sim: Boolean = false)
     extends Config(
-      new WithIrisTacitTrace ++
+      new WithIrisTacitTrace(sim) ++
 
         // ==================================
         // Set up buses
