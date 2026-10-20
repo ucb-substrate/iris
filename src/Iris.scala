@@ -52,7 +52,33 @@ class IrisSystem(implicit p: Parameters)
     with testchipip.serdes.CanHavePeripheryTLSerial
     with sifive.blocks.devices.uart.HasPeripheryUART
     with edu.berkeley.cs.chippy.clocking.HasChippyPRCI
-    with constellation.soc.CanHaveGlobalNoC
+    with constellation.soc.CanHaveGlobalNoC {
+  Espresso.requireOnPath()
+}
+
+/** Constellation's route computers minimize their routing tables with Chisel's
+  * `decoder`, which quietly falls back to Quine-McCluskey when it cannot launch
+  * espresso. On the Iris NoC that fallback runs for a long time and then dies
+  * inside RouteComputer with "Vector cannot have negative size -2147483648", so
+  * fail before elaboration instead.
+  */
+object Espresso {
+  private lazy val check: Unit =
+    try os.proc("espresso").call(stdin = ".i 1\n.o 1\n.type fr\n1 1\n.e\n")
+    catch {
+      // The same failure that makes Chisel's decoder fall back to QMC.
+      case e: java.io.IOException =>
+        throw new IllegalStateException(
+          s"""Cannot run espresso (${e.getMessage}).
+             |Iris needs espresso on PATH to generate its NoC: without it,
+             |Chisel's decoder falls back to Quine-McCluskey, which blows up on
+             |the route computers. Install it from
+             |https://github.com/chipsalliance/espresso (see README.md).""".stripMargin
+        )
+    }
+
+  def requireOnPath(): Unit = check
+}
 
 class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
   val system = LazyModule(new IrisSystem)

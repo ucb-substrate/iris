@@ -3,8 +3,22 @@ package build
 import mill._
 import scalalib._
 
-trait ChipModule extends ScalaModule {
+trait ChipModule extends ScalaModule, FreshForkPath {
   def scalaVersion = "2.13.18"
   def chiselVersion = "7.9.0"
 }
 
+/** Mill's `javaHomePathForkEnv` reads `Task.env` inside a cached task, so a
+  * forked JVM (tests, `run`, `runMain`) keeps the PATH from the first run
+  * forever. Re-read it on every run instead: tools like espresso are found
+  * through it. Test objects don't inherit this from their parent module, so
+  * each one mixes it in.
+  */
+trait FreshForkPath extends javalib.RunModule {
+  def shellPath = Task.Input { Task.env.find(_._1.equalsIgnoreCase("PATH")).map(_._2) }
+
+  override def javaHomePathForkEnv = Task {
+    val javaHomeBin = (javaHome().fold(os.Path(sys.props("java.home")))(_.path) / "bin").toString
+    Map("PATH" -> (javaHomeBin +: shellPath().toSeq).mkString(java.io.File.pathSeparator))
+  }
+}
