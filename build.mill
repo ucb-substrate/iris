@@ -21,7 +21,7 @@ object `package` extends ChipModule {
     mvn"org.chipsalliance:::chisel-plugin:${chiselVersion}",
   )
 
-  object test extends ScalaTests, TestModule.ScalaTest {
+  object test extends ScalaTests, TestModule.ScalaTest, FreshForkPath {
     def moduleDeps = super.moduleDeps ++ Seq(testchipip)
 
     def mvnDeps = Seq(
@@ -124,7 +124,7 @@ object `package` extends ChipModule {
       mvn"org.chipsalliance:::chisel-plugin:${chiselVersion}",
     )
 
-    object test extends ScalaTests, TestModule.ScalaTest {
+    object test extends ScalaTests, TestModule.ScalaTest, FreshForkPath {
       def mvnDeps = Seq(
         mvn"org.scalatest::scalatest:3.2.19",
       )

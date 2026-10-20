@@ -45,20 +45,54 @@ class JTAGChipIO(hasReset: Boolean) extends Bundle {
 
 class IrisSystem(implicit p: Parameters)
     extends edu.berkeley.cs.chippy.ChippySystem
+    with CanHaveClockTap
     with testchipip.soc.CanHaveChipletRouting
     with testchipip.soc.CanHaveSubsystemInjectors // Enables the subsystem injector API
     with testchipip.soc.CanHaveSwitchableOffchipBus // Enables optional off-chip-bus with interface-switch
     with testchipip.serdes.CanHavePeripheryTLSerial
     with sifive.blocks.devices.uart.HasPeripheryUART
     with edu.berkeley.cs.chippy.clocking.HasChippyPRCI
-    with constellation.soc.CanHaveGlobalNoC
+    with constellation.soc.CanHaveGlobalNoC {
+  Espresso.requireOnPath()
+}
+
+/** Constellation's route computers minimize their routing tables with Chisel's
+  * `decoder`, which quietly falls back to Quine-McCluskey when it cannot launch
+  * espresso. On the Iris NoC that fallback runs for a long time and then dies
+  * inside RouteComputer with "Vector cannot have negative size -2147483648", so
+  * fail before elaboration instead.
+  */
+object Espresso {
+  private lazy val check: Unit =
+    try os.proc("espresso").call(stdin = ".i 1\n.o 1\n.type fr\n1 1\n.e\n")
+    catch {
+      // The same failure that makes Chisel's decoder fall back to QMC.
+      case e: java.io.IOException =>
+        throw new IllegalStateException(
+          s"""Cannot run espresso (${e.getMessage}).
+             |Iris needs espresso on PATH to generate its NoC: without it,
+             |Chisel's decoder falls back to Quine-McCluskey, which blows up on
+             |the route computers. Install it from
+             |https://github.com/chipsalliance/espresso (see README.md).""".stripMargin
+        )
+    }
+
+  def requireOnPath(): Unit = check
+}
 
 class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
   val system = LazyModule(new IrisSystem)
+
+  val tlbus = system.asInstanceOf[BaseSubsystem].locateTLBusWrapper(system.prciParams.slaveWhere)
+  val baseAddress = system.prciParams.baseAddress
+  val clockDivider = system.prci_ctrl_domain { LazyModule(new TLClockDivider (baseAddress + 0x20000, tlbus.beatBytes, enable=true)) }
+
   val clockGroupsSourceNode = ClockGroupSourceNode(
     Seq(ClockGroupSourceParameters())
   )
-  system.chiptopClockGroupsNode := clockGroupsSourceNode
+  tlbus.coupleTo("clock-div-ctrl")    { clockDivider.tlNode := TLFragmenter(tlbus.beatBytes, tlbus.blockBytes) := TLBuffer() := _ }  // Off-chip clock divider
+  system.chiptopClockGroupsNode := clockDivider.clockNode := clockGroupsSourceNode
+
   val debugClockSinkNode = ClockSinkNode(Seq(ClockSinkParameters()))
   debugClockSinkNode := system
     .locateTLBusWrapper(p(ExportDebug).slaveWhere)
@@ -122,6 +156,9 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
 
     // Tie off interupts and chip ID
     system.module.interrupts := DontCare
+
+    val clock_tap = IO(Output(Clock()))
+    clock_tap := system.clockTapIO.get.getWrappedValue
 
     val serial_tl = IO(
       new DecoupledExternalSyncPhitIO(p(SerialTLKey)(0).phyParams.phitWidth)
@@ -250,6 +287,8 @@ class WithIrisBusTweaks
   */
 class WithIrisRocketCore
     extends Config(
+      // Decouple Rocket Core from uncore freq
+      new freechips.rocketchip.rocket.WithAsynchronousCDCs(4, 3) ++
       // ICache
       new freechips.rocketchip.rocket.WithL1ICacheWays(2) ++
         new freechips.rocketchip.rocket.WithL1ICacheSets(128) ++
@@ -355,7 +394,8 @@ class WithIrisUncore(sim: Boolean = false)
               "cbus",
               "system_bus",
               "fbus",
-              "pbus"
+              "pbus",
+              "d2d"
             ),
             Nil
           )
@@ -483,7 +523,7 @@ class IrisConfig(sim: Boolean = false)
         // ==================================
         // Shuttle Tile + Saturn Cores
         // ==================================
-        // new shuttle.common.WithAsynchronousShuttleTiles(3, 3, location=InCluster(0)) ++ // Add async crossings between RocketTile and uncore
+        new shuttle.common.WithAsynchronousShuttleTiles(4, 3) ++ // Add async crossings between RocketTile and uncore
         new saturn.shuttle.WithShuttleVectorUnit(
           256,
           128,
@@ -491,7 +531,6 @@ class IrisConfig(sim: Boolean = false)
         ) ++
         new shuttle.common.WithShuttleTileBeatBytes(16) ++
         new shuttle.common.WithTCM(size = 128L << 10, banks = 2) ++
-        new shuttle.common.WithShuttleTileBoundaryBuffers() ++
         // ICache
         new shuttle.common.WithL1ICacheWays(2) ++
         new shuttle.common.WithL1ICacheSets(64) ++

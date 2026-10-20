@@ -211,6 +211,8 @@
 #define UCIE_CLK_CFG_UNGATE_REQ 0x100a0ULL
 #define UCIE_PLL_LOCK_OBSERVED 0x100a8ULL
 #define UCIE_UCIE_RST 0x100b0ULL
+#define UCIE_PHY_TEST_CLK_SRC_SEL 0x100b8ULL
+#define UCIE_SB_CLK_SRC_SEL 0x100c0ULL
 #define UCIE_RATE_CFG 0x10100ULL
 #define UCIE_RATE_CFG_WIDTH 0x8ULL
 
@@ -243,9 +245,8 @@
 #define UCIE_TRAIN_DATA_LANES 0x10ULL
 #define UCIE_TRAIN_VALID_LANE 0x10ULL
 #define UCIE_TRAIN_SCORE_LANES 0x11ULL
-#define UCIE_RATE_CFG_MAIN_CLK_SEL_LSB 0x8ULL
-#define UCIE_RATE_CFG_TX_CLK_DIV_LSB 0x6ULL
-#define UCIE_RATE_CFG_PHY_TEST_CLK_DIV_LSB 0x3ULL
+#define UCIE_RATE_CFG_MAIN_CLK_SEL_LSB 0x5ULL
+#define UCIE_RATE_CFG_TX_CLK_DIV_LSB 0x3ULL
 #define UCIE_TRAIN_EYE_FINE_POINTS 0x4ULL
 #define UCIE_TRAIN_EYE_FINE_STEP 0x10ULL
 #define UCIE_TRAIN_EYE_DIVS 0x3ULL
@@ -287,8 +288,8 @@ static inline void write_rxctl(uintptr_t base, uint64_t lane, uint64_t ofs, uint
 static inline void set_clk_gate(uintptr_t base, uint64_t en) {
   reg_write64(base + UCIE_CLK_GATE_EN, en);
 }
-static inline void set_rate_cfg(uintptr_t base, uint64_t rate, uint64_t main_sel, uint64_t tx_div, uint64_t phytest_div, uint64_t pll_en) {
-  reg_write64(base + UCIE_RATE_CFG + rate * UCIE_RATE_CFG_WIDTH, ((main_sel << UCIE_RATE_CFG_MAIN_CLK_SEL_LSB) | (tx_div << UCIE_RATE_CFG_TX_CLK_DIV_LSB) | (phytest_div << UCIE_RATE_CFG_PHY_TEST_CLK_DIV_LSB) | pll_en));
+static inline void set_rate_cfg(uintptr_t base, uint64_t rate, uint64_t main_sel, uint64_t tx_div, uint64_t pll_en) {
+  reg_write64(base + UCIE_RATE_CFG + rate * UCIE_RATE_CFG_WIDTH, ((main_sel << UCIE_RATE_CFG_MAIN_CLK_SEL_LSB) | (tx_div << UCIE_RATE_CFG_TX_CLK_DIV_LSB) | pll_en));
 }
 static inline void set_freq_sel_auto(uintptr_t base, uint64_t en) {
   reg_write64(base + UCIE_FREQ_SEL_AUTO_EN, en);
@@ -331,10 +332,11 @@ static inline void set_tx_phase(uintptr_t base, uint64_t half_cycles) {
   reg_write64(base + UCIE_TX_CLK_PHASE, half_cycles);
   reg_write64(base + UCIE_CLK_GATE_EN, 0x1ULL);
 }
-static inline void use_internal_clk(uintptr_t base, uint64_t phytest_div) {
+static inline void use_internal_clk(uintptr_t base, uint64_t phytest_src, uint64_t phytest_div) {
   reg_write64(base + UCIE_PLL8_EN, 0x1ULL);
   reg_write64(base + UCIE_PLL12_EN, 0x1ULL);
   reg_write64(base + UCIE_X2_EN, 0x1ULL);
+  reg_write64(base + UCIE_PHY_TEST_CLK_SRC_SEL, phytest_src);
   reg_write64(base + UCIE_PHY_TEST_CLK_DIV, phytest_div);
   reg_write64(base + UCIE_PHY_TEST_CLK_BYPASS_EN, 0x0ULL);
   apply_clk_cfg(base);
