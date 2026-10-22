@@ -244,7 +244,11 @@ object IrisNoCParams {
 /** Tacit trace encoder and trace sinks. */
 class WithIrisTacitTrace
     extends Config(
-      new tacit.WithTraceSinkDMA(1) ++
+      // One DMA sink per tile with a port on each bus, chosen by its bus_select
+      // register (soft-reset the DMA before changing it):
+      //   0 (reset): FBUS -> SBUS, reaches the SBUS scratchpad, or DRAM through the L2
+      //   1:         MBUS -> DRAM below the L2 (bypasses it)
+      new tacit.WithTraceSinkDMA(1, buses = Some(Seq(FBUS, MBUS))) ++
         new tacit.WithTraceSinkAlways(0) ++
         new WithTacitTraceArbiterMonitor ++
         new WithTacitParallelEncoder
