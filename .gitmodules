@@ -1,12 +1,12 @@
 [submodule "shuttle"]
 	path = shuttle
-	url = git@github.com:ucb-bar/shuttle.git
+	url = git@github.com:miles-rusch-berkeley/shuttle.git
 [submodule "saturn-vectors"]
 	path = saturn-vectors
 	url = git@github.com:ucb-bar/saturn-vectors.git
 [submodule "rocket-chip"]
 	path = rocket-chip
-	url = https://github.com/chipsalliance/rocket-chip.git
+	url = git@github.com:miles-rusch-berkeley/rocket-chip.git
 [submodule "testchipip"]
 	path = testchipip
 	url = git@github.com:ucb-bar/testchipip.git
