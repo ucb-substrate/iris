@@ -307,16 +307,16 @@ class IrisSpec extends AnyFunSpec {
       )
     }
 
-    it("should run opu- benchmark binaries") {
+    it("should run vme- benchmark binaries") {
       implicit val p = new IrisConfig(sim = true)
       val benchmarkDir = Utils.root / "saturn-vectors" / "benchmarks"
       val benchmarkBinaries =
         os.walk(benchmarkDir)
           .filter(os.isFile)
-          .filter(path => path.last.startsWith("opu-") && path.last.endsWith(".riscv"))
+          .filter(path => path.last.startsWith("vme-") && path.last.endsWith(".riscv"))
           .sortBy(_.last)
 
-      require(benchmarkBinaries.nonEmpty, s"No opu-* .riscv binaries found under $benchmarkDir")
+      require(benchmarkBinaries.nonEmpty, s"No vme-* .riscv binaries found under $benchmarkDir")
 
       benchmarkBinaries.foreach { binaryPath =>
         val workDir = Utils.buildRoot / s"Iris_should_run_${binaryPath.last.stripSuffix(".riscv")}"
