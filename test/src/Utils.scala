@@ -114,7 +114,9 @@ script -e -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_d
       binaryPaths: Seq[Path],
       plusArgs: Seq[Seq[String]] = Seq.empty,
       fast: Boolean = false,
-      debug: Boolean = false
+      debug: Boolean = false,
+      serialTLFreqMHz: Option[Double] = None,
+      memTrafficMonitor: Boolean = false
   )(implicit p: Parameters) = {
     binaryPaths.zipWithIndex.foreach { case (path, i) =>
       assert(
@@ -133,7 +135,7 @@ script -e -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_d
     os.makeDir.all(artifactsDir)
 
     ChiselStage.emitSystemVerilogFile(
-      new SimTop(nChips, binaryPaths, plusArgs, fast),
+      new SimTop(nChips, binaryPaths, plusArgs, fast, serialTLFreqMHz, memTrafficMonitor),
       args = Array(
         "--target-dir",
         sourceDir.toString

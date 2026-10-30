@@ -252,7 +252,11 @@ object IrisNoCParams {
   */
 class WithIrisTacitTrace(sim: Boolean = false)
     extends Config(
-      new tacit.WithTraceSinkDMA(1) ++
+      // One DMA sink per tile with a port on each bus, chosen by its bus_select
+      // register (soft-reset the DMA before changing it):
+      //   0 (reset): FBUS -> SBUS, reaches the SBUS scratchpad, or DRAM through the L2
+      //   1:         MBUS -> DRAM below the L2 (bypasses it)
+      new tacit.WithTraceSinkDMA(1, buses = Some(Seq(FBUS, MBUS))) ++
         new tacit.WithTraceSinkAlways(0) ++
         (if (sim) new WithTacitTraceArbiterMonitor else Parameters.empty) ++
         new WithTacitParallelEncoder
@@ -560,13 +564,15 @@ class IrisConfig(sim: Boolean = false)
               address = 0x200000,
               managerWhere = SBUS,
               numLanes = 16,
-              includeDefaultModels = true
+              includeDefaultModels = true,
+              sim = sim
             )),
             UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x208000,
               managerWhere = SBUS,
               numLanes = 16,
               includeDefaultModels = true,
+              sim = sim,
               moduleId = 1
             ))
         ))) ++
