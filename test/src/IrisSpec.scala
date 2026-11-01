@@ -331,16 +331,16 @@ class IrisSpec extends AnyFunSpec {
       )
     }
 
-    it("should run opu- benchmark binaries") {
+    it("should run vme- benchmark binaries") {
       implicit val p = new IrisConfig(sim = true)
       val benchmarkDir = Utils.root / "saturn-vectors" / "benchmarks"
       val benchmarkBinaries =
         os.walk(benchmarkDir)
           .filter(os.isFile)
-          .filter(path => path.last.startsWith("opu-") && path.last.endsWith(".riscv"))
+          .filter(path => path.last.startsWith("vme-") && path.last.endsWith(".riscv"))
           .sortBy(_.last)
 
-      require(benchmarkBinaries.nonEmpty, s"No opu-* .riscv binaries found under $benchmarkDir")
+      require(benchmarkBinaries.nonEmpty, s"No vme-* .riscv binaries found under $benchmarkDir")
 
       benchmarkBinaries.foreach { binaryPath =>
         val workDir = Utils.buildRoot / s"Iris_should_run_${binaryPath.last.stripSuffix(".riscv")}"
@@ -361,6 +361,18 @@ class IrisSpec extends AnyFunSpec {
         workDir,
         nChips = 1,
         binaryPaths = Seq(Utils.root / "saturn-vectors" / "benchmarks" / "vec-sgemm.riscv"),
+        fast = true
+      )
+    }
+
+    it("should run mmt4d pytorch kernel test") {
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_mmt4d_pytorch"
+
+      Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(os.Path("/scratch/milesrusch/iree/kernels/test_mmt4d_pytorch.riscv")),
         fast = true
       )
     }
