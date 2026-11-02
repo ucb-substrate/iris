@@ -16,51 +16,48 @@
 #define UCIE_TX_DATA_MODE 0x10ULL
 #define UCIE_TX_LFSR_SEED 0x18ULL
 #define UCIE_TX_LFSR_SEED_WIDTH 0x8ULL
-#define UCIE_TX_DIVIDER_RST 0xb0ULL
-#define UCIE_RX_DIVIDER_RST 0xb8ULL
-#define UCIE_TX_DATAPATH_RST 0xc0ULL
-#define UCIE_TX_FSM_RST 0xc8ULL
-#define UCIE_TX_EXECUTE 0xd0ULL
-#define UCIE_TX_WRITE_CHUNK 0xd8ULL
-#define UCIE_TX_PACKETS_SENT 0xe0ULL
-#define UCIE_TX_MANUAL_REPEAT_PERIOD 0xe8ULL
-#define UCIE_TX_PACKETS_TO_SEND 0xf0ULL
-#define UCIE_TX_CLK_P 0xf8ULL
-#define UCIE_TX_CLK_N 0x100ULL
-#define UCIE_TX_DATA_LANE_GROUP 0x108ULL
-#define UCIE_TX_DATA_OFFSET 0x110ULL
-#define UCIE_TX_DATA_CHUNK_IN0 0x118ULL
-#define UCIE_TX_DATA_CHUNK_IN1 0x120ULL
-#define UCIE_TX_DATA_CHUNK_OUT0 0x128ULL
-#define UCIE_TX_DATA_CHUNK_OUT1 0x130ULL
-#define UCIE_TX_TEST_STATE 0x138ULL
-#define UCIE_RX_DATA_MODE 0x140ULL
-#define UCIE_RX_LFSR_SEED 0x148ULL
+#define UCIE_TX_DATAPATH_RST 0xb0ULL
+#define UCIE_TX_FSM_RST 0xb8ULL
+#define UCIE_TX_EXECUTE 0xc0ULL
+#define UCIE_TX_WRITE_CHUNK 0xc8ULL
+#define UCIE_TX_PACKETS_SENT 0xd0ULL
+#define UCIE_TX_MANUAL_REPEAT_PERIOD 0xd8ULL
+#define UCIE_TX_PACKETS_TO_SEND 0xe0ULL
+#define UCIE_TX_CLK_P 0xe8ULL
+#define UCIE_TX_CLK_N 0xf0ULL
+#define UCIE_TX_DATA_LANE_GROUP 0xf8ULL
+#define UCIE_TX_DATA_OFFSET 0x100ULL
+#define UCIE_TX_DATA_CHUNK_IN0 0x108ULL
+#define UCIE_TX_DATA_CHUNK_IN1 0x110ULL
+#define UCIE_TX_DATA_CHUNK_OUT0 0x118ULL
+#define UCIE_TX_DATA_CHUNK_OUT1 0x120ULL
+#define UCIE_TX_TEST_STATE 0x128ULL
+#define UCIE_RX_DATA_MODE 0x130ULL
+#define UCIE_RX_LFSR_SEED 0x138ULL
 #define UCIE_RX_LFSR_SEED_WIDTH 0x8ULL
-#define UCIE_RX_BIT_ERRORS 0x1e0ULL
+#define UCIE_RX_BIT_ERRORS 0x1d0ULL
 #define UCIE_RX_BIT_ERRORS_WIDTH 0x8ULL
-#define UCIE_RX_BIT_ERRORS_EARLY 0x278ULL
+#define UCIE_RX_BIT_ERRORS_EARLY 0x268ULL
 #define UCIE_RX_BIT_ERRORS_EARLY_WIDTH 0x8ULL
-#define UCIE_RX_BIT_ERRORS_LATE 0x310ULL
+#define UCIE_RX_BIT_ERRORS_LATE 0x300ULL
 #define UCIE_RX_BIT_ERRORS_LATE_WIDTH 0x8ULL
-#define UCIE_RX_DATAPATH_RST 0x3a8ULL
-#define UCIE_RX_FSM_RST 0x3b0ULL
-#define UCIE_RX_PACKETS_TO_RECEIVE 0x3b8ULL
-#define UCIE_RX_PAUSE_COUNTERS 0x3c0ULL
-#define UCIE_RX_PACKETS_RECEIVED 0x3c8ULL
-#define UCIE_RX_SIGNATURE 0x3d0ULL
-#define UCIE_RX_IDLE_WORDS_OBSERVED 0x3d8ULL
-#define UCIE_RX_DATA_LANE 0x3e0ULL
-#define UCIE_RX_DATA_OFFSET 0x3e8ULL
-#define UCIE_RX_DATA_CHUNK 0x3f0ULL
-#define UCIE_TXCTL 0x3f8ULL
+#define UCIE_RX_DATAPATH_RST 0x398ULL
+#define UCIE_RX_FSM_RST 0x3a0ULL
+#define UCIE_RX_PACKETS_TO_RECEIVE 0x3a8ULL
+#define UCIE_RX_PAUSE_COUNTERS 0x3b0ULL
+#define UCIE_RX_PACKETS_RECEIVED 0x3b8ULL
+#define UCIE_RX_SIGNATURE 0x3c0ULL
+#define UCIE_RX_IDLE_WORDS_OBSERVED 0x3c8ULL
+#define UCIE_RX_DATA_LANE 0x3d0ULL
+#define UCIE_RX_DATA_OFFSET 0x3d8ULL
+#define UCIE_RX_DATA_CHUNK 0x3e0ULL
+#define UCIE_TXCTL 0x3e8ULL
 #define UCIE_TXCTL_TILE_OFS 0x0ULL
 #define UCIE_TXCTL_SHUFFLER_OFS 0x8ULL
 #define UCIE_TXCTL_SHUFFLER_WIDTH 0x8ULL
 #define UCIE_TXCTL_SAMPLE_NEGEDGE_OFS 0x108ULL
-#define UCIE_TXCTL_DELAY_OFS 0x110ULL
-#define UCIE_TXCTL_WIDTH 0x118ULL
-#define UCIE_RXCTL 0x1af0ULL
+#define UCIE_TXCTL_WIDTH 0x110ULL
+#define UCIE_RXCTL 0x1a38ULL
 #define UCIE_RXCTL_ZEN_OFS 0x0ULL
 #define UCIE_RXCTL_ZCTL_OFS 0x8ULL
 #define UCIE_RXCTL_VREF_SEL_OFS 0x10ULL
@@ -71,45 +68,45 @@
 #define UCIE_RXCTL_SHUFFLER_OFS 0x38ULL
 #define UCIE_RXCTL_SHUFFLER_WIDTH 0x8ULL
 #define UCIE_RXCTL_SAMPLE_NEGEDGE_OFS 0x138ULL
-#define UCIE_RXCTL_RX_DELAY_OFS 0x140ULL
+#define UCIE_RXCTL_DCTRL_OFS 0x140ULL
 #define UCIE_RXCTL_WIDTH 0x148ULL
-#define UCIE_DEBUG_TX_TEST_MODE 0x35d8ULL
-#define UCIE_DEBUG_TX_DATA_MODE 0x35e0ULL
-#define UCIE_DEBUG_TX_LFSR_SEED 0x35e8ULL
-#define UCIE_DEBUG_TX_FSM_RST 0x35f0ULL
-#define UCIE_DEBUG_TX_EXECUTE 0x35f8ULL
-#define UCIE_DEBUG_TX_MANUAL_REPEAT_PERIOD 0x3600ULL
-#define UCIE_DEBUG_TX_PACKETS_TO_SEND 0x3608ULL
-#define UCIE_DEBUG_DATA 0x3610ULL
+#define UCIE_DEBUG_TX_TEST_MODE 0x3520ULL
+#define UCIE_DEBUG_TX_DATA_MODE 0x3528ULL
+#define UCIE_DEBUG_TX_LFSR_SEED 0x3530ULL
+#define UCIE_DEBUG_TX_FSM_RST 0x3538ULL
+#define UCIE_DEBUG_TX_EXECUTE 0x3540ULL
+#define UCIE_DEBUG_TX_MANUAL_REPEAT_PERIOD 0x3548ULL
+#define UCIE_DEBUG_TX_PACKETS_TO_SEND 0x3550ULL
+#define UCIE_DEBUG_DATA 0x3558ULL
 #define UCIE_DEBUG_DATA_WIDTH 0x8ULL
-#define UCIE_DEBUG_DRIVERCTL 0x3690ULL
+#define UCIE_DEBUG_DRIVERCTL 0x35d8ULL
 #define UCIE_DEBUG_DRIVERCTL_WIDTH 0x8ULL
-#define UCIE_DEBUG_TXCTL_TILE 0x36b0ULL
-#define UCIE_DEBUG_TXCTL_SHUFFLER 0x36b8ULL
+#define UCIE_DEBUG_TXCTL_TILE 0x35f8ULL
+#define UCIE_DEBUG_TXCTL_SHUFFLER 0x3600ULL
 #define UCIE_DEBUG_TXCTL_SHUFFLER_WIDTH 0x8ULL
-#define UCIE_DEBUG_TX_TEST_STATE 0x37b8ULL
-#define UCIE_DEBUG_TX_PACKETS_SENT 0x37c0ULL
-#define UCIE_DEBUG_CLK_MUX_SEL 0x37c8ULL
-#define UCIE_DEBUG_RX_LANE 0x37d0ULL
-#define UCIE_DEBUG_RX_BIT 0x37d8ULL
-#define UCIE_TX_VALID 0x37e0ULL
-#define UCIE_RX_LFSR_VALID 0x37e8ULL
-#define UCIE_CONTROLLER_SEL 0x37f0ULL
-#define UCIE_MAINBAND_MODE 0x37f8ULL
-#define UCIE_SIDEBAND_MODE 0x3800ULL
-#define UCIE_CREDIT_FLOW_ENABLE 0x3808ULL
-#define UCIE_TX_VALID_LANE_SEL 0x3810ULL
-#define UCIE_RX_VALID_LANE_SEL 0x3818ULL
-#define UCIE_LAST_SEEN_TL_REQ 0x3820ULL
-#define UCIE_SB_TX_PACKET 0x3828ULL
-#define UCIE_SB_TX_SEND 0x3830ULL
-#define UCIE_SB_TX_BUSY 0x3838ULL
-#define UCIE_SB_RX_PACKET 0x3840ULL
-#define UCIE_SB_RX_VALID 0x3848ULL
-#define UCIE_SB_RX_POP 0x3850ULL
-#define UCIE_SB_RX_OVERFLOW 0x3858ULL
-#define UCIE_SB_RX_RST 0x3860ULL
-#define UCIE_SB_TL_RX_OVERFLOW 0x3868ULL
+#define UCIE_DEBUG_TX_TEST_STATE 0x3700ULL
+#define UCIE_DEBUG_TX_PACKETS_SENT 0x3708ULL
+#define UCIE_DEBUG_CLK_MUX_SEL 0x3710ULL
+#define UCIE_DEBUG_RX_LANE 0x3718ULL
+#define UCIE_DEBUG_RX_BIT 0x3720ULL
+#define UCIE_TX_VALID 0x3728ULL
+#define UCIE_RX_LFSR_VALID 0x3730ULL
+#define UCIE_CONTROLLER_SEL 0x3738ULL
+#define UCIE_MAINBAND_MODE 0x3740ULL
+#define UCIE_SIDEBAND_MODE 0x3748ULL
+#define UCIE_CREDIT_FLOW_ENABLE 0x3750ULL
+#define UCIE_TX_VALID_LANE_SEL 0x3758ULL
+#define UCIE_RX_VALID_LANE_SEL 0x3760ULL
+#define UCIE_LAST_SEEN_TL_REQ 0x3768ULL
+#define UCIE_SB_TX_PACKET 0x3770ULL
+#define UCIE_SB_TX_SEND 0x3778ULL
+#define UCIE_SB_TX_BUSY 0x3780ULL
+#define UCIE_SB_RX_PACKET 0x3788ULL
+#define UCIE_SB_RX_VALID 0x3790ULL
+#define UCIE_SB_RX_POP 0x3798ULL
+#define UCIE_SB_RX_OVERFLOW 0x37a0ULL
+#define UCIE_SB_RX_RST 0x37a8ULL
+#define UCIE_SB_TL_RX_OVERFLOW 0x37b0ULL
 #define UCIE_PCIE_EXT_CAP_ID 0x4000ULL
 #define UCIE_DVSEC_VENDOR_ID 0x4004ULL
 #define UCIE_DVSEC_ID 0x4008ULL
@@ -197,8 +194,8 @@
 #define UCIE_PHY_TEST_CLK_DIV 0x10030ULL
 #define UCIE_PHY_TEST_CLK_BYPASS_EN 0x10038ULL
 #define UCIE_CLK_PHASE_SEL 0x10040ULL
-#define UCIE_CLK_GATE_EN 0x10048ULL
-#define UCIE_RX_CLK_GATE_EN 0x10050ULL
+#define UCIE_CLK_EN 0x10048ULL
+#define UCIE_RX_CLK_EN 0x10050ULL
 #define UCIE_FREQ_SEL_AUTO_EN 0x10058ULL
 #define UCIE_FREQ_SEL_OBSERVED 0x10060ULL
 #define UCIE_SB_CLK_DIV 0x10068ULL
@@ -213,7 +210,17 @@
 #define UCIE_UCIE_RST 0x100b0ULL
 #define UCIE_PHY_TEST_CLK_SRC_SEL 0x100b8ULL
 #define UCIE_SB_CLK_SRC_SEL 0x100c0ULL
-#define UCIE_RATE_CFG 0x10100ULL
+#define UCIE_TX_DIVIDER_RST 0x100c8ULL
+#define UCIE_RX_DIVIDER_RST 0x100d0ULL
+#define UCIE_PHY_TEST_CLK_EN 0x100d8ULL
+#define UCIE_SB_CLK_EN 0x100e0ULL
+#define UCIE_CLK_CFG_GATE_PHY_TEST 0x100e8ULL
+#define UCIE_CLK_CFG_GATE_SB 0x100f0ULL
+#define UCIE_CLK_MANUAL_EN 0x100f8ULL
+#define UCIE_MANUAL_CLKS_READY 0x10100ULL
+#define UCIE_MANUAL_CLKS_READY_FREQ_SEL 0x10108ULL
+#define UCIE_MANUAL_CLKS_UNGATED 0x10110ULL
+#define UCIE_RATE_CFG 0x10180ULL
 #define UCIE_RATE_CFG_WIDTH 0x8ULL
 
 // === Constants ===
@@ -285,14 +292,17 @@ static inline void write_rxctl(uintptr_t base, uint64_t lane, uint64_t ofs, uint
   reg_write64(base + UCIE_RXCTL + lane * UCIE_RXCTL_WIDTH + ofs, v);
 }
 
-static inline void set_clk_gate(uintptr_t base, uint64_t en) {
-  reg_write64(base + UCIE_CLK_GATE_EN, en);
+static inline void set_clk_en(uintptr_t base, uint64_t en) {
+  reg_write64(base + UCIE_CLK_EN, en);
 }
 static inline void set_rate_cfg(uintptr_t base, uint64_t rate, uint64_t main_sel, uint64_t tx_div, uint64_t pll_en) {
   reg_write64(base + UCIE_RATE_CFG + rate * UCIE_RATE_CFG_WIDTH, ((main_sel << UCIE_RATE_CFG_MAIN_CLK_SEL_LSB) | (tx_div << UCIE_RATE_CFG_TX_CLK_DIV_LSB) | pll_en));
 }
 static inline void set_freq_sel_auto(uintptr_t base, uint64_t en) {
   reg_write64(base + UCIE_FREQ_SEL_AUTO_EN, en);
+}
+static inline void set_clk_manual(uintptr_t base, uint64_t en) {
+  reg_write64(base + UCIE_CLK_MANUAL_EN, en);
 }
 static inline void apply_clk_cfg(uintptr_t base) {
   reg_write64(base + UCIE_CLK_CFG_APPLY, 0x1ULL);
@@ -324,13 +334,13 @@ static inline void reset_dividers(uintptr_t base) {
 static inline void set_main_clk(uintptr_t base, uint64_t src, uint64_t div) {
   reg_write64(base + UCIE_MAIN_CLK_SEL, src);
   reg_write64(base + UCIE_TX_CLK_DIV, div);
-  reg_write64(base + UCIE_CLK_GATE_EN, 0x1ULL);
+  reg_write64(base + UCIE_CLK_EN, 0x1ULL);
   apply_clk_cfg(base);
 }
 static inline void set_tx_phase(uintptr_t base, uint64_t half_cycles) {
-  reg_write64(base + UCIE_CLK_GATE_EN, 0x0ULL);
+  reg_write64(base + UCIE_CLK_EN, 0x0ULL);
   reg_write64(base + UCIE_TX_CLK_PHASE, half_cycles);
-  reg_write64(base + UCIE_CLK_GATE_EN, 0x1ULL);
+  reg_write64(base + UCIE_CLK_EN, 0x1ULL);
 }
 static inline void use_internal_clk(uintptr_t base, uint64_t phytest_src, uint64_t phytest_div) {
   reg_write64(base + UCIE_PLL8_EN, 0x1ULL);
@@ -341,8 +351,8 @@ static inline void use_internal_clk(uintptr_t base, uint64_t phytest_src, uint64
   reg_write64(base + UCIE_PHY_TEST_CLK_BYPASS_EN, 0x0ULL);
   apply_clk_cfg(base);
 }
-static inline void set_rx_clk_gate(uintptr_t base, uint64_t en) {
-  reg_write64(base + UCIE_RX_CLK_GATE_EN, en);
+static inline void set_rx_clk_en(uintptr_t base, uint64_t en) {
+  reg_write64(base + UCIE_RX_CLK_EN, en);
 }
 static inline void set_global_delay(uintptr_t base, uint64_t taps) {
   reg_write64(base + UCIE_CLK_PHASE_SEL, ((0x1ULL << taps) - 0x1ULL));
@@ -353,6 +363,9 @@ static inline void set_tx_delay(uintptr_t base, uint64_t lane, uint64_t taps) {
 
 static inline void set_rx_vref(uintptr_t base, uint64_t lane, uint64_t code) {
   write_rxctl(base, lane, UCIE_RXCTL_VREF_SEL_OFS, code);
+}
+static inline void set_rx_delay(uintptr_t base, uint64_t lane, uint64_t taps) {
+  write_rxctl(base, lane, UCIE_RXCTL_DCTRL_OFS, ((0x1ULL << taps) - 0x1ULL));
 }
 
 static inline void setup_ucie(uintptr_t base) {
@@ -370,9 +383,11 @@ static inline void setup_ucie(uintptr_t base) {
     reg_write64(base + UCIE_DEBUG_DRIVERCTL + 8 * i, UCIE_ENABLE_DRIVER_CTL);
   }
   reg_write64(base + UCIE_DEBUG_TXCTL_TILE, UCIE_ENABLE_TX_CTL);
-  set_clk_gate(base, 0x0ULL);
+  set_clk_en(base, 0x0ULL);
+  set_rx_clk_en(base, 0x0ULL);
   reset_dividers(base);
-  set_clk_gate(base, 0x1ULL);
+  set_clk_en(base, 0x1ULL);
+  set_rx_clk_en(base, 0x1ULL);
   reg_write64(base + UCIE_CONTROLLER_SEL, UCIE_CONTROLLER_SEL_PHYTEST);
   reg_write64(base + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_MANUAL);
   reg_write64(base + UCIE_SIDEBAND_MODE, UCIE_BAND_MODE_MANUAL);
@@ -380,10 +395,13 @@ static inline void setup_ucie(uintptr_t base) {
 }
 
 static inline void setup_ucie_digital(uintptr_t base) {
-  set_clk_gate(base, 0x0ULL);
+  reg_write64(base + UCIE_UCIE_RST, 0x0ULL);
+  set_clk_en(base, 0x0ULL);
+  set_rx_clk_en(base, 0x0ULL);
   set_global_delay(base, 0x1dULL);
   reset_dividers(base);
-  set_clk_gate(base, 0x1ULL);
+  set_clk_en(base, 0x1ULL);
+  set_rx_clk_en(base, 0x1ULL);
   for (int lane = 0; lane < 20; lane++) {
     write_txctl(base, lane, UCIE_TXCTL_TILE_OFS, UCIE_ENABLE_TX_CTL);
   }
