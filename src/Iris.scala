@@ -102,12 +102,18 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
   // Each UCIe link's register port, on the chiplet router's control bus. The
   // router cannot attach these itself: each is a crossbar in front of UcieTL's
   // register blocks, not the bare register node it takes.
+  //
+  // The buffer is the last thing before the port, so the register port, like
+  // the links' manager ports (`managerBuffer` in their `UcieTLParams`, inside
+  // the block), meets registers at UcieComplex's boundary. Until 2026-11-06 the width widget sat
+  // between them, and two of IrisTop's signoff violators ran from this
+  // buffer's queues through it into the block (-0.040) and back (-0.0002).
   system.d2d_ports.foreach { ports =>
     val cbus = system.locateTLBusWrapper(p(ChipletRoutingKey).get.controlBusWhere)
     val links = ports.collect { case link: UcieChipletLink => link }
     links.foreach { link =>
       cbus.coupleTo(s"${link.name}_control") {
-        link.regNode := TLWidthWidget(cbus.beatBytes) := TLBuffer() :=
+        link.regNode := TLBuffer() := TLWidthWidget(cbus.beatBytes) :=
           TLFragmenter(cbus) := _
       }
     }
@@ -560,20 +566,41 @@ class IrisConfig(sim: Boolean = false)
             // give each the lane clock distribution network laid out for its
             // own bump field (see `ClkDistLayout`). Each link also has its own
             // high-speed and digital bypass clock bumps.
+            //
+            // Each link's eight datapath async queues are 16 deep, not the
+            // default 32: at 32 their storage was 258k of UcieComplex's 544k
+            // flops. 16 still covers the ~8-cycle pointer round trip of a
+            // 3-stage synchronizer pair, so the queues that stream every cycle
+            // keep streaming; 8 would sit right at it.
+            //
+            // Each link's manager port is registered inside UcieComplex
+            // (`managerBuffer`, two entries on A and D). Without it the port
+            // meets the router's D-channel round-robin arbiter directly, which
+            // turns a link's `d.valid` into every link's `d.ready` in the same
+            // cycle. IrisTop's signoff of 2026-11-05 failed on exactly that:
+            // from d2d0's response buffer, out of UcieComplex, through the
+            // arbiter and back in to its credit counter (or d2d1's clock gates)
+            // in one 2 ns cycle, -0.391 at worst. The block's own timing saw
+            // each half alone, inside the 0.2 ns I/O budget its SDC gives the
+            // outside. A cycle of latency each way.
             UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x200000,
               managerWhere = SBUS,
               numLanes = 16,
+              queueParams = AsyncQueueParams(depth = 16),
               includeDefaultModels = true,
-              sim = sim
+              sim = sim,
+              managerBuffer = BufferParams.default
             )),
             UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x208000,
               managerWhere = SBUS,
               numLanes = 16,
+              queueParams = AsyncQueueParams(depth = 16),
               includeDefaultModels = true,
               sim = sim,
-              moduleId = 1
+              moduleId = 1,
+              managerBuffer = BufferParams.default
             ))
         ))) ++
         new WithIrisUncore(sim)
