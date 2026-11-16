@@ -62,18 +62,53 @@ class ClockSourceAtFreqMHz(val freqMHz: Double)
   )
 }
 
+/** Prints a clock's period whenever it settles on a new value: after three
+  * consecutive posedge-to-posedge intervals of the same length, and only if
+  * that length differs from the last one printed. Tests grep the log for the
+  * `<name> period <ns> ns` lines.
+  */
+class ClockPeriodMonitor(name: String)
+    extends BlackBox(Map("NAME" -> StringParam(name)))
+    with HasBlackBoxInline {
+  val io = IO(new Bundle { val clk = Input(Clock()) })
+  setInline(
+    "ClockPeriodMonitor.sv",
+    """module ClockPeriodMonitor #(parameter string NAME = "clock") (input clk);
+      |  timeunit 1ns/1ps;
+      |  realtime last = 0.0, period = 0.0, reported = 0.0;
+      |  integer stable = 0;
+      |  always @(posedge clk) begin
+      |    if (last > 0.0) begin
+      |      if ($realtime - last == period) stable = stable + 1;
+      |      else stable = 0;
+      |      period = $realtime - last;
+      |      if (stable >= 3 && period != reported) begin
+      |        $display("[ClockPeriodMonitor] %s period %0.3f ns (at %0.3f ns)", NAME, period, $realtime);
+      |        reported = period;
+      |      end
+      |    end
+      |    last = $realtime;
+      |  end
+      |endmodule
+      |""".stripMargin
+  )
+}
+
 class SimTop(
     nChips: Int,
     binaryPaths: Seq[Path],
     plusArgs: Seq[Seq[String]] = Seq.empty,
     fast: Boolean = false,
     serialTLFreqMHz: Option[Double] = None,
-    memTrafficMonitor: Boolean = false // experiments only, see IrisExperiments.scala
+    memTrafficMonitor: Boolean = false, // experiments only, see IrisExperiments.scala
+    clockTapMonitor: Boolean = false
 )(implicit
     p: Parameters
 ) extends RawModule {
   val driver = Module(new TestDriver)
-  val harness = Module(new TestHarness(nChips, binaryPaths, plusArgs, fast, serialTLFreqMHz))
+  val harness = Module(
+    new TestHarness(nChips, binaryPaths, plusArgs, fast, serialTLFreqMHz, clockTapMonitor)
+  )
   if (memTrafficMonitor) Module(new MemTrafficMonitor)
   harness.io.reset := driver.reset
   driver.success := harness.io.success
@@ -132,13 +167,17 @@ class TestDriver extends ExtModule {
   *   clock for the serial-TL link and the off-chip memory model behind it. None
   *   keeps the link on the 500 MHz chip clock; on silicon it is an external
   *   clock, typically much slower than the core.
+  * @param clockTapMonitor
+  *   attach a [[ClockPeriodMonitor]] to each chip's `clock_tap` output, which
+  *   is otherwise left unconnected.
   */
 class TestHarness(
     nChips: Int,
     binaryPaths: Seq[Path],
     plusArgs: Seq[Seq[String]] = Seq.empty,
     fast: Boolean = false,
-    serialTLFreqMHz: Option[Double] = None
+    serialTLFreqMHz: Option[Double] = None,
+    clockTapMonitor: Boolean = false
 )(implicit
     p: Parameters
 ) extends RawModule {
@@ -236,6 +275,10 @@ class TestHarness(
         SimTSI.connect(ram.io.tsi.map(_.viewAs[TSIIO]), serialTLClock, io.reset, binaryPath, allPlusArgs)
       }
     }
+    if (clockTapMonitor) {
+      Module(new ClockPeriodMonitor(s"chip$chipId clock_tap")).io.clk := chiptop.clock_tap
+    }
+
     val chipSuccessReg = withReset(io.reset.asAsyncReset)(RegInit(false.B))
     when(dtm_success || success) { chipSuccessReg := true.B }
     chipSuccesses(chipId) := chipSuccessReg
@@ -539,6 +582,121 @@ class IrisSpec extends AnyFunSpec {
         fast = true,
         serialTLFreqMHz = Some(100)
       )
+    }
+
+    it("should boot hello.riscv over TSI on the tapeout serial TL") {
+      // The tethered boot path as built: tapeout config (16b serial TL, no TL
+      // monitors), link at 100 MHz, and no +loadmem -- SimTSI writes the
+      // program into memory over the link, then raises hart 0's MSIP.
+      implicit val p = new IrisConfig(sim = false)
+      val workDir = Utils.buildRoot / "Iris_should_boot_hello_riscv_over_tsi_tapeout_serial_tl"
+
+      val simLog = Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "software/hello.riscv"),
+        serialTLFreqMHz = Some(100)
+      )
+      assert(!os.read(workDir / "sim" / "simulate.sh").contains("+loadmem"))
+      Utils.assertLogContains(simLog, "Hello world chip")
+    }
+
+    it("should run a vector kernel on every hart and contend with AMOs and LR/SC") {
+      // Harts 0 and 1 are the ShuttleTiles, hart 2 is Rocket (the program checks
+      // marchid). Each runs a self-checking RVV kernel, then all three hammer
+      // shared DRAM lines with AMOs and LR/SC; hart 0 checks the final values.
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_multihart_vec_amo"
+
+      val simLog = Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "software/multihart-vec-amo.riscv"),
+        fast = true
+      )
+      Utils.assertLogContains(simLog, "multihart-vec-amo: all checks passed")
+    }
+
+    it("should keep running with the clock dividers programmed") {
+      // clock-div.riscv steps the uncore and per-tile dividers through /2, /3
+      // and /7, one at a time and mixed; each hart measures its clock against
+      // mtime and runs a memory self-check after every change. It also sets
+      // the clock_tap divider, whose output period the harness measures.
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_clock_div"
+
+      val simLog = Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "software/clock-div.riscv"),
+        fast = true,
+        clockTapMonitor = true
+      )
+      Utils.assertLogContains(
+        simLog,
+        "clock-div: all checks passed",
+        // 500 MHz chip clock: undivided, then /2, /3, /7.
+        "chip0 clock_tap period 2.000 ns",
+        "chip0 clock_tap period 4.000 ns",
+        "chip0 clock_tap period 6.000 ns",
+        "chip0 clock_tap period 14.000 ns"
+      )
+    }
+
+    it("should run MX and fp8 vector benchmarks") {
+      // saturn-vectors' MX/fp8 benchmarks as software/Makefile builds them,
+      // with fixed copies of opu-fp8-gemm and vec-mx-matmul, whose checks
+      // cannot fail upstream (see software/saturn-benchmarks/). "should run
+      // opu- benchmark binaries" runs saturn-vectors' own opu-fp8-gemm build.
+      // Runs every benchmark, then fails with the list of those that failed.
+      //
+      // vec-fp8 is left out: at LMUL=8 its `vfmul.vv v3, v2, v1` and
+      // `vmsne.vv v24, v3, v2` name register groups that are not multiples of
+      // 8 (reserved encodings), it never uses b (v8) or c (v16), and it reads
+      // its verdict from v24 rather than the vredor result, so its
+      // "Correct"/"Incorrect" says nothing about the hardware (on Iris it
+      // prints "Incorrect" and exits 1). Add it back once it is fixed.
+      implicit val p = new IrisConfig(sim = true)
+      val benchmarkDir = Utils.root / "software"
+      val failures =
+        Seq("opu-fp8-gemm", "vec-mx-binary", "vec-mx-unary", "vec-mx-matmul").flatMap {
+          name =>
+            val workDir = Utils.buildRoot / s"Iris_should_run_$name"
+            scala.util
+              .Try(
+                Utils.simulateTopWithBinaries(
+                  workDir,
+                  nChips = 1,
+                  binaryPaths = Seq(benchmarkDir / s"$name.riscv"),
+                  fast = true
+                )
+              )
+              .failed
+              .toOption
+              .map(e => s"$name: ${e.getMessage}")
+        }
+      assert(failures.isEmpty, failures.mkString("\n"))
+    }
+
+    it("should run hello.riscv with X-propagation") {
+      // VCS -xprop=tmerge. The RANDOMIZE_* defines still apply, so registers
+      // and memories start from random values rather than X; what xprop adds is
+      // that an X reaching an if/case condition (e.g. from an undriven or
+      // invalid signal) propagates instead of silently taking one branch.
+      // Without RANDOMIZE_REG_INIT/MEM_INIT it stops at 21 ns: the chip's UART
+      // txd is X while the chip is still in reset, and testchipip's
+      // UARTAdapter, out of reset sooner, asserts on the X it samples.
+      implicit val p = new IrisConfig(sim = true)
+      val workDir = Utils.buildRoot / "Iris_should_run_hello_riscv_xprop"
+
+      val simLog = Utils.simulateTopWithBinaries(
+        workDir,
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "software/hello.riscv"),
+        fast = true,
+        xprop = true
+      )
+      Utils.assertLogContains(simLog, "Hello world chip")
     }
   }
 
