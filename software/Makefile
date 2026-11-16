@@ -66,13 +66,12 @@ multihart-vec-amo.o: multihart-vec-amo.c
 multihart-vec-amo.riscv: multihart-vec-amo.o
 	$(GCC) $(LDFLAGS) $(VEC_ARCHFLAGS) $< -o $@
 
-# saturn-vectors' MX/fp8 benchmarks, built here so nothing is written into that
-# submodule. Same flags and bare-metal runtime (crt.S, syscalls.c, test.ld) as
-# its benchmarks/Makefile, against its data.S. A copy in saturn-benchmarks/
-# replaces upstream's main.c (opu-fp8-gemm and vec-mx-matmul, whose checks
-# cannot fail upstream).
+# saturn-vectors' MX vector benchmarks, built here so nothing is written into
+# that submodule. Same flags and bare-metal runtime (crt.S, syscalls.c, test.ld)
+# as its benchmarks/Makefile, against its data.S. A copy in saturn-benchmarks/
+# replaces upstream's main.c (vec-mx-matmul, whose check cannot fail upstream).
 SATURN_BENCH = $(REPO_ROOT)/saturn-vectors/benchmarks
-SATURN_PROGRAMS = opu-fp8-gemm vec-mx-binary vec-mx-unary vec-mx-matmul
+SATURN_PROGRAMS = vec-mx-binary vec-mx-unary vec-mx-matmul
 SATURN_CFLAGS = -DPREALLOCATE=1 -mcmodel=medany -static -O2 -g -ffast-math -fno-common \
 	-fno-builtin-printf -fno-tree-loop-distribute-patterns -march=rv64gcv_zfh_zvfh -mabi=$(ABI) -std=gnu99
 SATURN_LDFLAGS = -static -nostdlib -nostartfiles -lm -lgcc -T $(SATURN_BENCH)/common/test.ld
