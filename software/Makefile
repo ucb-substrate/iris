@@ -35,7 +35,8 @@ ARCHFLAGS = -march=$(ARCH) -mabi=$(ABI)
 VEC_ARCHFLAGS = -march=rv64gcv_zfh_zvfh -mabi=$(ABI)
 
 CFLAGS  = -std=gnu99 -O2 -fno-common -fno-builtin-printf -Wall -specs=htif_nano.specs -Iinclude
-LDFLAGS = -specs=htif_nano.specs
+# --wrap=exit routes exit() through exit.c's fix for riscv-tools 1.0.9.
+LDFLAGS = -specs=htif_nano.specs -Wl,--wrap=exit
 
 PROGRAMS = hello hello0 hello1 router ring-hello ucie-loopback ucie-digital-loopback tacit-always tacit-dma ucie-vec-memcpy multihart-vec-amo clock-div
 
@@ -51,20 +52,21 @@ PROGRAMS = hello hello0 hello1 router ring-hello ucie-loopback ucie-digital-loop
 %.o: %.c
 	$(GCC) $(CFLAGS) $(ARCHFLAGS) -c $< -o $@
 
-%.riscv: %.o
-	$(GCC) $(LDFLAGS) $< -o $@
+# exit.o wraps newlib-nano's exit(); see exit.c.
+%.riscv: %.o exit.o
+	$(GCC) $(LDFLAGS) $^ -o $@
 
 ucie-vec-memcpy.o: ucie-vec-memcpy.c
 	$(GCC) $(CFLAGS) $(VEC_ARCHFLAGS) -c $< -o $@
 
-ucie-vec-memcpy.riscv: ucie-vec-memcpy.o
-	$(GCC) $(LDFLAGS) $(VEC_ARCHFLAGS) $< -o $@
+ucie-vec-memcpy.riscv: ucie-vec-memcpy.o exit.o
+	$(GCC) $(LDFLAGS) $(VEC_ARCHFLAGS) $^ -o $@
 
 multihart-vec-amo.o: multihart-vec-amo.c
 	$(GCC) $(CFLAGS) $(VEC_ARCHFLAGS) -c $< -o $@
 
-multihart-vec-amo.riscv: multihart-vec-amo.o
-	$(GCC) $(LDFLAGS) $(VEC_ARCHFLAGS) $< -o $@
+multihart-vec-amo.riscv: multihart-vec-amo.o exit.o
+	$(GCC) $(LDFLAGS) $(VEC_ARCHFLAGS) $^ -o $@
 
 # saturn-vectors' MX vector benchmarks, built here so nothing is written into
 # that submodule. Same flags and bare-metal runtime (crt.S, syscalls.c, test.ld)
