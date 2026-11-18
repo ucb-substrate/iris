@@ -117,7 +117,7 @@ script -e -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_d
       debug: Boolean = false,
       serialTLFreqMHz: Option[Double] = None,
       memTrafficMonitor: Boolean = false
-  )(implicit p: Parameters) = {
+  )(implicit p: Parameters): String = {
     binaryPaths.zipWithIndex.foreach { case (path, i) =>
       assert(
         os.exists(path),
@@ -178,5 +178,19 @@ script -e -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_d
         s"simulation log reports \"$f\""
       ) + s"; see ${simDir / "simulation.log"}"
     )
+    simLog
+  }
+
+  /** The transition counts `DebugBumpMonitor` reported for one link, by bump
+    * name.
+    */
+  def debugBumpCounts(simLog: String, link: String): Map[String, BigInt] = {
+    val line = simLog.linesIterator
+      .find(_.startsWith(s"Debug bumps $link:"))
+      .getOrElse(throw new AssertionError(s"no debug bump report for $link"))
+    "(\\w+) (\\d+)".r
+      .findAllMatchIn(line.stripPrefix(s"Debug bumps $link:"))
+      .map(m => m.group(1) -> BigInt(m.group(2)))
+      .toMap
   }
 }

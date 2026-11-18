@@ -53,8 +53,12 @@ int main(void) {
 
   printf("Setting up UCIe0 (digital controller)\n");
   setup_ucie_digital(UCIE0_REG_BASE);
+  printf("UCIe0 RX lanes held back %ld UI to align words\n",
+         reg_read64(UCIE0_REG_BASE + UCIE_RX_UI_DELAY));
   printf("Setting up UCIe1 (digital controller)\n");
   setup_ucie_digital(UCIE1_REG_BASE);
+  printf("UCIe1 RX lanes held back %ld UI to align words\n",
+         reg_read64(UCIE1_REG_BASE + UCIE_RX_UI_DELAY));
 
   printf("Testing UCIe at port 0\n");
   program_router(0, 1, 0);
