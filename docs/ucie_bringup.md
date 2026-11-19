@@ -38,7 +38,7 @@ apart from `address` and `moduleId`:
 
 The windows come from `UcieTLRegs.regionSize` = 0x3C00, `UcieController.ctrlBase`/`specBase` =
 0x3C00/0x4000 with a 0x4000 spec region, and `UcieClkRegs.offset` = 0x10000 with a 0x1000 region
-(`ucie/scala/src/tilelink/TileLink.scala:225,269,993,1695-1704`;
+(`ucie/scala/src/tilelink/TileLink.scala:225,269,972,1674-1683`;
 `ucie/scala/src/uciedigital/regs/UcieRegParams.scala:49-50,127-160`). The two links' windows don't
 overlap.
 
@@ -77,7 +77,7 @@ Other Iris addresses that bring-up programs use (`software/router.h`; `src/Iris.
 Each link's register port hangs off the **control bus**, through `TLFragmenter(cbus)`, a `TLBuffer`
 and a `TLWidthWidget(cbus.beatBytes)` (`src/Iris.scala:102-114`).
 - The router can't attach the port itself: it takes a bare register node, and the port is a
-  crossbar in front of three blocks (`ucie/scala/src/tilelink/TileLink.scala:2635-2643`).
+  crossbar in front of three blocks (`ucie/scala/src/tilelink/TileLink.scala:2616-2624`).
 - The link's chip clock is the `d2d` clock group. That group is combined into `uncore` with `cbus`,
   `sbus`, `pbus` and the other buses, all at 500 MHz (`src/Iris.scala:391-406,453-457`). So the
   port needs no clock crossing.
@@ -192,7 +192,7 @@ Each `c2c_uciek` has two parts:
 Chisel flattens the names with underscores, for example `c2c_ucie0_phy_bypassClk`.
 
 **Lane order on the bumps** is PHY lane order: `txData[i]`/`rxData[i]` are data lanes 0-15. Valid,
-track and the forwarded clock have their own bumps (`ucie/scala/src/phy/Phy.scala:572-585,633-639`).
+track and the forwarded clock have their own bumps (`ucie/scala/src/phy/Phy.scala:586-599,647-653`).
 
 **Harness connectivity** (`test/src/IrisSpec.scala`, `connectRingLink` and the code around it):
 - **One chip:** each link is looped onto itself by `UcieBumpsIO.loopback`. TX data, valid, track,
@@ -301,7 +301,7 @@ nonzero if any check failed.
 
 **A slow PHY test clock starves this die's TX and overflows its RX.** Where the
 next data word of a run isn't queued in time, `TxClkGater` at the PHY end sends
-an idle word instead (`ucie/scala/src/tilelink/TileLink.scala:2716-2779`), so
+an idle word instead (`ucie/scala/src/tilelink/TileLink.scala:2697-2762`), so
 the receiving RX gets an idle word in the middle of the run, or with the clock
 gated, the burst split in two. With the clock running, the RX still takes a
 word every packet clock, more than a slow PHY test clock drains. On a
