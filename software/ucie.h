@@ -89,7 +89,7 @@
 #define UCIE_DEBUG_MUX_SEL 0x3700ULL
 #define UCIE_DEBUG_MUX_SEL_WIDTH 0x8ULL
 #define UCIE_TX_VALID 0x3710ULL
-#define UCIE_RX_LFSR_VALID 0x3718ULL
+#define UCIE_RX_VALID 0x3718ULL
 #define UCIE_CONTROLLER_SEL 0x3720ULL
 #define UCIE_MAINBAND_MODE 0x3728ULL
 #define UCIE_SIDEBAND_MODE 0x3730ULL
@@ -106,6 +106,63 @@
 #define UCIE_SB_RX_OVERFLOW 0x3788ULL
 #define UCIE_SB_RX_RST 0x3790ULL
 #define UCIE_SB_TL_RX_OVERFLOW 0x3798ULL
+#define UCIE_RX_START_MODE 0x37a0ULL
+#define UCIE_RX_BURST_MODE 0x37a8ULL
+#define UCIE_RX_SELF_SYNC 0x37b0ULL
+#define UCIE_RX_MONITOR 0x37b8ULL
+#define UCIE_RX_CAPTURE_MODE 0x37c0ULL
+#define UCIE_RX_CAPTURE_POST_TRIGGER 0x37c8ULL
+#define UCIE_RX_TRIGGER_LANE_MASK 0x37d0ULL
+#define UCIE_RX_CAPTURE_TRIGGERED 0x37d8ULL
+#define UCIE_RX_CAPTURE_TRIGGER_PACKET 0x37e0ULL
+#define UCIE_TX_BURST_PACKETS 0x37e8ULL
+#define UCIE_TX_IDLE_PACKETS 0x37f0ULL
+#define UCIE_TX_CLK_GATE 0x37f8ULL
+#define UCIE_TX_CLK_PREAMBLE 0x3800ULL
+#define UCIE_TX_CLK_POSTAMBLE 0x3808ULL
+#define UCIE_TX_TRACK_CLK 0x3810ULL
+#define UCIE_TX_INJECT_ERROR 0x3818ULL
+#define UCIE_TX_INJECT_LANE 0x3820ULL
+#define UCIE_TRACK_ONES 0x3828ULL
+#define UCIE_TRACK_ZEROS 0x3830ULL
+#define UCIE_TRACK_CNT_RST 0x3838ULL
+#define UCIE_TRACK_CNT_HOLD 0x3840ULL
+#define UCIE_TX_CLK_DIRECT 0x3848ULL
+#define UCIE_TX_TEST_FIFO_UNDERFLOW 0x3850ULL
+#define UCIE_RX_TEST_FIFO_OVERFLOW 0x3858ULL
+#define UCIE_LOOPBACK_RX_FIFO_OVERFLOW 0x3860ULL
+#define UCIE_TX_TRACK_WORD 0x3868ULL
+#define UCIE_RX_CAPTURE_START 0x3870ULL
+#define UCIE_LOOPBACK_TX_FIFO_UNDERFLOW 0x3878ULL
+#define UCIE_TX_DEBUG_FIFO_UNDERFLOW 0x3880ULL
+#define UCIE_TRACK_ONES_EVEN 0x3888ULL
+#define UCIE_RX_MANUAL_CHECK 0x3890ULL
+#define UCIE_TX_LANE_FIXED 0x3898ULL
+#define UCIE_TX_LANE_INVERT 0x38a0ULL
+#define UCIE_TX_FIXED_WORD 0x38a8ULL
+#define UCIE_RX_LANE_FIXED 0x38b0ULL
+#define UCIE_RX_LANE_INVERT 0x38b8ULL
+#define UCIE_RX_FIXED_WORD 0x38c0ULL
+#define UCIE_RX_LANE_ERRORED 0x38c8ULL
+#define UCIE_RX_ERR_POS_LANE 0x38d0ULL
+#define UCIE_RX_ERR_POS_MASK 0x38d8ULL
+#define UCIE_RX_ERR_CLASS_LANE 0x38e0ULL
+#define UCIE_RX_ERR_RISE_ONE 0x38e8ULL
+#define UCIE_RX_ERR_RISE_ZERO 0x38f0ULL
+#define UCIE_RX_ERR_FALL_ONE 0x38f8ULL
+#define UCIE_RX_ERR_FALL_ZERO 0x3900ULL
+#define UCIE_CONTROLLER_RX_FIFO_OVERFLOW 0x3908ULL
+#define UCIE_TX_QUEUE_LIMIT 0x3910ULL
+#define UCIE_TX_CLK_PARK_ALTERNATE 0x3918ULL
+#define UCIE_RX_FRAME_OFFSET 0x3920ULL
+#define UCIE_TX_UI_DELAY 0x3928ULL
+#define UCIE_TX_UI_DELAY_WIDTH 0x8ULL
+#define UCIE_RX_UI_DELAY 0x39c8ULL
+#define UCIE_RX_UI_DELAY_WIDTH 0x8ULL
+#define UCIE_RX_VALID_START_THRESHOLD 0x3a58ULL
+#define UCIE_DEBUG_TXCTL_SAMPLE_NEGEDGE 0x3a60ULL
+#define UCIE_RX_AUTO_SEED 0x3a68ULL
+#define UCIE_TL_RX_FIFO_OVERFLOW 0x3a70ULL
 #define UCIE_PCIE_EXT_CAP_ID 0x4000ULL
 #define UCIE_DVSEC_VENDOR_ID 0x4004ULL
 #define UCIE_DVSEC_ID 0x4008ULL
@@ -181,9 +238,10 @@
 #define UCIE_VENDOR_DEBUG_UNLOCK 0x7010ULL
 #define UCIE_VENDOR_FORCE_LINK_ACTIVE 0x7014ULL
 #define UCIE_VENDOR_TS_OVERRIDE_EN 0x7018ULL
-#define UCIE_UCIE_LINK_RESET 0x3c00ULL
-#define UCIE_UCIE_PWR_GOOD 0x3c08ULL
-#define UCIE_UCIE_RETRY_TRAINING_AMT 0x3c10ULL
+#define UCIE_LINK_RESET 0x3c00ULL
+#define UCIE_PWR_GOOD 0x3c08ULL
+#define UCIE_RETRY_TRAINING_AMT 0x3c10ULL
+#define UCIE_CONTROLLER_RST 0x3c18ULL
 #define UCIE_MAIN_CLK_SEL 0x10000ULL
 #define UCIE_PLL8_EN 0x10008ULL
 #define UCIE_PLL12_EN 0x10010ULL
@@ -206,7 +264,7 @@
 #define UCIE_CLK_CFG_UNGATE_DELAY 0x10098ULL
 #define UCIE_CLK_CFG_UNGATE_REQ 0x100a0ULL
 #define UCIE_PLL_LOCK_OBSERVED 0x100a8ULL
-#define UCIE_UCIE_RST 0x100b0ULL
+#define UCIE_RST 0x100b0ULL
 #define UCIE_PHY_TEST_CLK_SRC_SEL 0x100b8ULL
 #define UCIE_SB_CLK_SRC_SEL 0x100c0ULL
 #define UCIE_TX_DIVIDER_RST 0x100c8ULL
@@ -219,7 +277,32 @@
 #define UCIE_MANUAL_CLKS_READY 0x10100ULL
 #define UCIE_MANUAL_CLKS_READY_FREQ_SEL 0x10108ULL
 #define UCIE_MANUAL_CLKS_UNGATED 0x10110ULL
-#define UCIE_RATE_CFG 0x10180ULL
+#define UCIE_CLK_METER_PHY_TEST 0x10118ULL
+#define UCIE_CLK_METER_SB 0x10120ULL
+#define UCIE_CLK_METER_TX_DIV 0x10128ULL
+#define UCIE_CLK_METER_RX_DIV 0x10130ULL
+#define UCIE_PLL_LOCK_LOST 0x10138ULL
+#define UCIE_CLK_GATE_EDGE_SEL 0x10140ULL
+#define UCIE_CLK_PHASE_AUTO_APPLY 0x10148ULL
+#define UCIE_PLL8_AUTO_EN 0x10150ULL
+#define UCIE_PLL8_KP 0x10158ULL
+#define UCIE_PLL8_KI 0x10160ULL
+#define UCIE_PLL8_CODE_INIT 0x10168ULL
+#define UCIE_PLL8_CODE_BYP 0x10170ULL
+#define UCIE_PLL8_DBIAS 0x10178ULL
+#define UCIE_PLL12_AUTO_EN 0x10180ULL
+#define UCIE_PLL12_KP 0x10188ULL
+#define UCIE_PLL12_KI 0x10190ULL
+#define UCIE_PLL12_CODE_INIT 0x10198ULL
+#define UCIE_PLL12_CODE_BYP 0x101a0ULL
+#define UCIE_PLL12_DBIAS 0x101a8ULL
+#define UCIE_PLL8_DCOARSE 0x101b0ULL
+#define UCIE_PLL8_CODE_FULL 0x101b8ULL
+#define UCIE_PLL8_CODE_INT 0x101c0ULL
+#define UCIE_PLL12_CODE_FULL 0x101c8ULL
+#define UCIE_PLL12_CODE_INT 0x101d0ULL
+#define UCIE_CLK_CFG_GATE_DWELL 0x101d8ULL
+#define UCIE_RATE_CFG 0x10200ULL
 #define UCIE_RATE_CFG_WIDTH 0x8ULL
 
 // === Constants ===
@@ -236,21 +319,38 @@
 #define UCIE_CONTROLLER_SEL_UCIE 0x1ULL
 #define UCIE_BAND_MODE_MANUAL 0x0ULL
 #define UCIE_BAND_MODE_TL 0x1ULL
+#define UCIE_RX_START_MODE_VALID 0x0ULL
+#define UCIE_RX_START_MODE_IMMEDIATE 0x1ULL
+#define UCIE_CAPTURE_MODE_FIRST 0x0ULL
+#define UCIE_CAPTURE_MODE_ERROR 0x1ULL
 #define UCIE_DEFAULT_CLK_P 0x55555555ULL
 #define UCIE_DEFAULT_CLK_N 0xaaaaaaaaULL
 #define UCIE_DEFAULT_VALID 0xf0f0f0fULL
 #define UCIE_DEFAULT_TRACK 0x55555555ULL
 #define UCIE_ENABLE_DRIVER_CTL 0x3ffeULL
 #define UCIE_ENABLE_TX_CTL 0x3fffff000000000ULL
+#define UCIE_DISABLE_DRIVER_CTL 0x1ULL
+#define UCIE_DISABLE_TX_CTL 0xf000000000ULL
+#define UCIE_TX_CTL_DELAY_MASK 0xffffffffULL
 #define UCIE_TX_CTL_DELAY_LSB 0x0ULL
 #define UCIE_TX_CTL_ENP_LSB 0x31ULL
 #define UCIE_TX_CTL_ENN_LSB 0x28ULL
 #define UCIE_TX_CTL_ENP_EQ_LSB 0x24ULL
 #define UCIE_TX_CTL_ENN_EQ_LSB 0x20ULL
-#define UCIE_TRAIN_LFSR_SEED 0x123456789abcdefULL
+#define UCIE_TRAIN_LFSR_SEED 0x8123456789abcdefULL
+#define UCIE_LFSR_SEED_LANE_STEP 0x1111ULL
 #define UCIE_TRAIN_DATA_LANES 0x10ULL
 #define UCIE_TRAIN_VALID_LANE 0x10ULL
 #define UCIE_TRAIN_SCORE_LANES 0x11ULL
+#define UCIE_NUM_TEST_LANES 0x13ULL
+#define UCIE_VALID_LANE 0x10ULL
+#define UCIE_TRACK_LANE 0x11ULL
+#define UCIE_LOOPBACK_LANE 0x12ULL
+#define UCIE_DEFAULT_VALID_LANE_SEL 0x10ULL
+#define UCIE_TRACK_VALID_LANE_SEL 0x11ULL
+#define UCIE_SRAM_PACKETS 0x40ULL
+#define UCIE_CLK_POSTAMBLE_UI 0x2ULL
+#define UCIE_CLK_METER_WINDOW_CYCLES 0x400ULL
 #define UCIE_RATE_CFG_MAIN_CLK_SEL_LSB 0x5ULL
 #define UCIE_RATE_CFG_TX_CLK_DIV_LSB 0x3ULL
 #define UCIE_TRAIN_EYE_FINE_POINTS 0x4ULL
@@ -267,6 +367,16 @@
 #define UCIE_CLK_UNGATE_SRC_PLL_LOCK 0x0ULL
 #define UCIE_CLK_UNGATE_SRC_MMIO 0x1ULL
 #define UCIE_CLK_UNGATE_SRC_DELAY 0x2ULL
+#define UCIE_DEBUG_MUX_SB_TX_CLK 0x0ULL
+#define UCIE_DEBUG_MUX_TX_DIV_CLK 0x1ULL
+#define UCIE_DEBUG_MUX_RX_DIV_CLK 0x2ULL
+#define UCIE_DEBUG_MUX_DIGITAL_BYPASS_CLK 0x3ULL
+#define UCIE_DEBUG_MUX_SIDEBAND_BYPASS_CLK 0x4ULL
+#define UCIE_DEBUG_MUX_REF_CLK 0x5ULL
+#define UCIE_DEBUG_MUX_RX_DATA_LSB 0x6ULL
+#define UCIE_DEBUG_MUX_TX_DATA_LSB 0x7ULL
+#define UCIE_DEBUG_MUX_TEST_TX_PAD_CLK 0x8ULL
+#define UCIE_DEBUG_MUX_TEST_RX_PAD_CLK 0x9ULL
 
 // === Helper functions ===
 static inline void reset_datapath(uintptr_t base) {
@@ -274,8 +384,8 @@ static inline void reset_datapath(uintptr_t base) {
   reg_write64(base + UCIE_RX_DATAPATH_RST, 0x1ULL);
 }
 static inline void reset_fsms(uintptr_t base) {
-  reset_datapath(base);
   reg_write64(base + UCIE_TX_FSM_RST, 0x1ULL);
+  reset_datapath(base);
   reg_write64(base + UCIE_RX_FSM_RST, 0x1ULL);
   reg_write64(base + UCIE_DEBUG_TX_FSM_RST, 0x1ULL);
   assert(reg_read64(base + UCIE_TX_TEST_STATE) == (UCIE_TX_TEST_STATE_IDLE));
@@ -305,11 +415,17 @@ static inline void set_clk_manual(uintptr_t base, uint64_t en) {
 }
 static inline void apply_clk_cfg(uintptr_t base) {
   reg_write64(base + UCIE_CLK_CFG_APPLY, 0x1ULL);
-  for (int w = 0; w < 256; w++) {
+  {
     uint64_t busy;
-    busy = reg_read64(base + UCIE_CLK_CFG_BUSY);
-    if (busy == 0) {
-      break;
+    busy = 0x1ULL;
+    for (int w = 0; w < 65536; w++) {
+      busy = reg_read64(base + UCIE_CLK_CFG_BUSY);
+      if (busy == 0) {
+        break;
+      }
+    }
+    if (busy != 0) {
+      printf("apply_clk_cfg: the apply never finished; a PLL it waits on may not be locking (see clkMeter* and pllLockObserved)\n");
     }
   }
 }
@@ -321,8 +437,8 @@ static inline void release_clk_gate(uintptr_t base) {
   reg_write64(base + UCIE_CLK_CFG_UNGATE_REQ, 0x1ULL);
 }
 static inline void reset_ucie(uintptr_t base) {
-  reg_write64(base + UCIE_UCIE_RST, 0x1ULL);
-  reg_write64(base + UCIE_UCIE_RST, 0x0ULL);
+  reg_write64(base + UCIE_RST, 0x1ULL);
+  reg_write64(base + UCIE_RST, 0x0ULL);
 }
 static inline void reset_dividers(uintptr_t base) {
   reg_write64(base + UCIE_TX_DIVIDER_RST, 0x1ULL);
@@ -331,20 +447,27 @@ static inline void reset_dividers(uintptr_t base) {
   reg_write64(base + UCIE_RX_DIVIDER_RST, 0x0ULL);
 }
 static inline void set_main_clk(uintptr_t base, uint64_t src, uint64_t div) {
+  if (src == 0 || src == 2) {
+    reg_write64(base + UCIE_PLL8_EN, 0x1ULL);
+  }
+  if (src == 1) {
+    reg_write64(base + UCIE_PLL12_EN, 0x1ULL);
+  }
   reg_write64(base + UCIE_MAIN_CLK_SEL, src);
   reg_write64(base + UCIE_TX_CLK_DIV, div);
-  reg_write64(base + UCIE_CLK_EN, 0x1ULL);
   apply_clk_cfg(base);
 }
 static inline void set_tx_phase(uintptr_t base, uint64_t half_cycles) {
-  reg_write64(base + UCIE_CLK_EN, 0x0ULL);
   reg_write64(base + UCIE_TX_CLK_PHASE, half_cycles);
-  reg_write64(base + UCIE_CLK_EN, 0x1ULL);
+  apply_clk_cfg(base);
 }
 static inline void use_internal_clk(uintptr_t base, uint64_t phytest_src, uint64_t phytest_div) {
-  reg_write64(base + UCIE_PLL8_EN, 0x1ULL);
-  reg_write64(base + UCIE_PLL12_EN, 0x1ULL);
-  reg_write64(base + UCIE_X2_EN, 0x1ULL);
+  if (phytest_src == 0) {
+    reg_write64(base + UCIE_PLL8_EN, 0x1ULL);
+  }
+  if (phytest_src == 1) {
+    reg_write64(base + UCIE_PLL12_EN, 0x1ULL);
+  }
   reg_write64(base + UCIE_PHY_TEST_CLK_SRC_SEL, phytest_src);
   reg_write64(base + UCIE_PHY_TEST_CLK_DIV, phytest_div);
   reg_write64(base + UCIE_PHY_TEST_CLK_BYPASS_EN, 0x0ULL);
@@ -354,20 +477,33 @@ static inline void set_rx_clk_en(uintptr_t base, uint64_t en) {
   reg_write64(base + UCIE_RX_CLK_EN, en);
 }
 static inline void set_global_delay(uintptr_t base, uint64_t taps) {
-  reg_write64(base + UCIE_CLK_PHASE_SEL, ((0x1ULL << taps) - 0x1ULL));
+  reg_write64(base + UCIE_CLK_PHASE_SEL, ((taps >= 64) ? ~0x0ULL : ((0x1ULL << taps) - 0x1ULL)));
+  apply_clk_cfg(base);
 }
 static inline void set_tx_delay(uintptr_t base, uint64_t lane, uint64_t taps) {
-  write_txctl(base, lane, UCIE_TXCTL_TILE_OFS, (UCIE_ENABLE_TX_CTL | (((0x1ULL << taps) - 0x1ULL) << UCIE_TX_CTL_DELAY_LSB)));
+  {
+    uint64_t tile;
+    tile = reg_read64(base + UCIE_TXCTL + lane * UCIE_TXCTL_WIDTH + UCIE_TXCTL_TILE_OFS);
+    write_txctl(base, lane, UCIE_TXCTL_TILE_OFS, ((tile & ~UCIE_TX_CTL_DELAY_MASK) | ((((taps >= 64) ? ~0x0ULL : ((0x1ULL << taps) - 0x1ULL)) << UCIE_TX_CTL_DELAY_LSB) & UCIE_TX_CTL_DELAY_MASK)));
+  }
 }
 
 static inline void set_rx_vref(uintptr_t base, uint64_t lane, uint64_t code) {
   write_rxctl(base, lane, UCIE_RXCTL_VREF_SEL_OFS, code);
 }
 static inline void set_rx_delay(uintptr_t base, uint64_t lane, uint64_t taps) {
-  write_rxctl(base, lane, UCIE_RXCTL_DCTRL_OFS, ((0x1ULL << taps) - 0x1ULL));
+  write_rxctl(base, lane, UCIE_RXCTL_DCTRL_OFS, ((taps >= 64) ? ~0x0ULL : ((0x1ULL << taps) - 0x1ULL)));
 }
 
+static inline void enable_debug_drivers(uintptr_t base, uint64_t en) {
+  for (int i = 0; i < 2; i++) {
+    reg_write64(base + UCIE_DEBUG_DRIVERCTL + 8 * i, (en ? UCIE_ENABLE_DRIVER_CTL : UCIE_DISABLE_DRIVER_CTL));
+  }
+  reg_write64(base + UCIE_DEBUG_TXCTL_TILE, (en ? UCIE_ENABLE_TX_CTL : UCIE_DISABLE_TX_CTL));
+}
 static inline void setup_ucie(uintptr_t base) {
+  set_clk_en(base, 0x0ULL);
+  set_rx_clk_en(base, 0x0ULL);
   reset_ucie(base);
   for (int lane = 0; lane < 21; lane++) {
     write_txctl(base, lane, UCIE_TXCTL_TILE_OFS, UCIE_ENABLE_TX_CTL);
@@ -377,14 +513,8 @@ static inline void setup_ucie(uintptr_t base) {
   reg_write64(base + UCIE_TX_CLK_P, UCIE_DEFAULT_CLK_P);
   reg_write64(base + UCIE_TX_CLK_N, UCIE_DEFAULT_CLK_N);
   reg_write64(base + UCIE_TX_VALID, UCIE_DEFAULT_VALID);
-  reg_write64(base + UCIE_RX_LFSR_VALID, UCIE_DEFAULT_VALID);
-  for (int i = 0; i < 2; i++) {
-    reg_write64(base + UCIE_DEBUG_DRIVERCTL + 8 * i, UCIE_ENABLE_DRIVER_CTL);
-  }
-  reg_write64(base + UCIE_DEBUG_TXCTL_TILE, UCIE_ENABLE_TX_CTL);
-  set_clk_en(base, 0x0ULL);
-  set_rx_clk_en(base, 0x0ULL);
-  reset_dividers(base);
+  reg_write64(base + UCIE_RX_VALID, UCIE_DEFAULT_VALID);
+  enable_debug_drivers(base, 0x0ULL);
   set_clk_en(base, 0x1ULL);
   set_rx_clk_en(base, 0x1ULL);
   reg_write64(base + UCIE_CONTROLLER_SEL, UCIE_CONTROLLER_SEL_PHYTEST);
@@ -393,23 +523,115 @@ static inline void setup_ucie(uintptr_t base) {
   reset_fsms(base);
 }
 
+static inline void seed_lfsrs(uintptr_t base) {
+  for (int i = 0; i < 19; i++) {
+    reg_write64(base + UCIE_TX_LFSR_SEED + i * UCIE_TX_LFSR_SEED_WIDTH, (UCIE_TRAIN_LFSR_SEED + i * UCIE_LFSR_SEED_LANE_STEP));
+    reg_write64(base + UCIE_RX_LFSR_SEED + i * UCIE_RX_LFSR_SEED_WIDTH, (UCIE_TRAIN_LFSR_SEED + i * UCIE_LFSR_SEED_LANE_STEP));
+  }
+}
+
+static inline void run_lfsr(uintptr_t base, uint64_t packets) {
+  reg_write64(base + UCIE_TEST_TARGET, UCIE_TEST_TARGET_MAINBAND);
+  reg_write64(base + UCIE_TX_TEST_MODE, UCIE_TX_TEST_MODE_LFSR);
+  reg_write64(base + UCIE_TX_DATA_MODE, UCIE_DATA_MODE_FINITE);
+  reg_write64(base + UCIE_RX_DATA_MODE, UCIE_DATA_MODE_FINITE);
+  reg_write64(base + UCIE_RX_PACKETS_TO_RECEIVE, packets);
+  reg_write64(base + UCIE_TX_PACKETS_TO_SEND, packets);
+  reset_fsms(base);
+  {
+    uint64_t settle_w;
+    settle_w = 0x0ULL;
+    for (int s = 0; s < 4096; s++) {
+      settle_w = reg_read64(base + UCIE_RX_IDLE_WORDS_OBSERVED);
+      if (settle_w >= 4) {
+        break;
+      }
+    }
+    if (settle_w < 4) {
+      printf("run_lfsr: the RX is handing over no words; no forwarded clock is arriving (see clkMeterRxDiv)\n");
+    }
+  }
+  reg_write64(base + UCIE_TX_EXECUTE, 0x1ULL);
+  {
+    uint64_t r;
+    uint64_t prev;
+    uint64_t stalls;
+    r = 0x0ULL;
+    prev = ~0x0ULL;
+    stalls = 0x0ULL;
+    for (int w = 0; w < 1024; w++) {
+      r = reg_read64(base + UCIE_RX_PACKETS_RECEIVED);
+      if (r >= packets) {
+        break;
+      }
+      if (r != prev || r == 0) {
+        stalls = 0x0ULL;
+      }
+      if (r == prev && r != 0) {
+        stalls = stalls + 0x1ULL;
+      }
+      prev = r;
+      if (stalls >= 32) {
+        break;
+      }
+    }
+    if (r < packets) {
+      printf("run_lfsr: the receiver stopped short of the packets asked for\n");
+    }
+  }
+}
+
+static inline void align_rx_words(uintptr_t base) {
+  reg_write64(base + UCIE_CONTROLLER_SEL, UCIE_CONTROLLER_SEL_PHYTEST);
+  reg_write64(base + UCIE_MAINBAND_MODE, UCIE_BAND_MODE_MANUAL);
+  reg_write64(base + UCIE_TX_CLK_P, UCIE_DEFAULT_CLK_P);
+  reg_write64(base + UCIE_TX_CLK_N, UCIE_DEFAULT_CLK_N);
+  reg_write64(base + UCIE_TX_VALID, UCIE_DEFAULT_VALID);
+  reg_write64(base + UCIE_RX_VALID, UCIE_DEFAULT_VALID);
+  for (int lane = 0; lane < 18; lane++) {
+    reg_write64(base + UCIE_RX_UI_DELAY + lane * UCIE_RX_UI_DELAY_WIDTH, 0x0ULL);
+  }
+  seed_lfsrs(base);
+  run_lfsr(base, 0x4ULL);
+  {
+    uint64_t received;
+    uint64_t offset;
+    received = reg_read64(base + UCIE_RX_PACKETS_RECEIVED);
+    offset = reg_read64(base + UCIE_RX_FRAME_OFFSET);
+    if (received == 0) {
+      printf("align_rx_words: the RX framed nothing, so rxUiDelay stays at 0\n");
+    }
+    if (received != 0) {
+      for (int lane = 0; lane < 18; lane++) {
+        reg_write64(base + UCIE_RX_UI_DELAY + lane * UCIE_RX_UI_DELAY_WIDTH, (32 - offset) % 32);
+      }
+    }
+  }
+}
+
 static inline void setup_ucie_digital(uintptr_t base) {
-  reg_write64(base + UCIE_UCIE_RST, 0x0ULL);
+  reg_write64(base + UCIE_RST, 0x0ULL);
   set_clk_en(base, 0x0ULL);
   set_rx_clk_en(base, 0x0ULL);
-  set_global_delay(base, 0x1dULL);
   reset_dividers(base);
   set_clk_en(base, 0x1ULL);
   set_rx_clk_en(base, 0x1ULL);
   for (int lane = 0; lane < 20; lane++) {
-    write_txctl(base, lane, UCIE_TXCTL_TILE_OFS, UCIE_ENABLE_TX_CTL);
+    {
+      uint64_t tile;
+      tile = reg_read64(base + UCIE_TXCTL + lane * UCIE_TXCTL_WIDTH + UCIE_TXCTL_TILE_OFS);
+      write_txctl(base, lane, UCIE_TXCTL_TILE_OFS, ((tile & UCIE_TX_CTL_DELAY_MASK) | (UCIE_ENABLE_TX_CTL & ~UCIE_TX_CTL_DELAY_MASK)));
+    }
   }
   for (int lane = 0; lane < 18; lane++) {
     write_rxctl(base, lane, UCIE_RXCTL_ZEN_OFS, 0x1ULL);
     write_rxctl(base, lane, UCIE_RXCTL_ZCTL_OFS, 0x0ULL);
   }
+  align_rx_words(base);
+  reg_write64(base + UCIE_TX_CLK_POSTAMBLE, 0x20ULL);
   reg_write64(base + UCIE_CONTROLLER_SEL, UCIE_CONTROLLER_SEL_UCIE);
   reset_datapath(base);
+  reg_write64(base + UCIE_CONTROLLER_RST, 0x0ULL);
   {
     uint64_t linkControl;
     linkControl = reg_read64(base + UCIE_RAW_FORMAT_ENABLE);
@@ -417,43 +639,17 @@ static inline void setup_ucie_digital(uintptr_t base) {
   }
   reg_write64(base + UCIE_UNCORR_ERR_MASK, 0x0ULL);
   reg_write64(base + UCIE_CORR_ERR_MASK, 0x0ULL);
-  while (1) {
+  {
     uint64_t linkStatus;
-    linkStatus = reg_read64(base + UCIE_RAW_FORMAT_ENABLED);
-    if ((linkStatus >> 0xfULL) & 0x1ULL) {
-      break;
+    linkStatus = 0x0ULL;
+    for (int w = 0; w < 16777216; w++) {
+      linkStatus = reg_read64(base + UCIE_RAW_FORMAT_ENABLED);
+      if ((linkStatus >> 0xfULL) & 0x1ULL) {
+        break;
+      }
     }
-  }
-}
-
-static inline void seed_lfsrs(uintptr_t base) {
-  for (int i = 0; i < 19; i++) {
-    reg_write64(base + UCIE_TX_LFSR_SEED + i * UCIE_TX_LFSR_SEED_WIDTH, UCIE_TRAIN_LFSR_SEED);
-    reg_write64(base + UCIE_RX_LFSR_SEED + i * UCIE_RX_LFSR_SEED_WIDTH, UCIE_TRAIN_LFSR_SEED);
-  }
-}
-
-static inline void run_lfsr(uintptr_t base, uint64_t packets) {
-  reset_fsms(base);
-  for (int s = 0; s < 64; s++) {
-    uint64_t settle_w;
-    settle_w = reg_read64(base + UCIE_RX_IDLE_WORDS_OBSERVED);
-    if (settle_w >= 4) {
-      break;
-    }
-  }
-  reg_write64(base + UCIE_TEST_TARGET, UCIE_TEST_TARGET_MAINBAND);
-  reg_write64(base + UCIE_TX_TEST_MODE, UCIE_TX_TEST_MODE_LFSR);
-  reg_write64(base + UCIE_TX_DATA_MODE, UCIE_DATA_MODE_FINITE);
-  reg_write64(base + UCIE_RX_DATA_MODE, UCIE_DATA_MODE_FINITE);
-  reg_write64(base + UCIE_RX_PACKETS_TO_RECEIVE, packets);
-  reg_write64(base + UCIE_TX_PACKETS_TO_SEND, packets);
-  reg_write64(base + UCIE_TX_EXECUTE, 0x1ULL);
-  for (int w = 0; w < 16; w++) {
-    uint64_t r;
-    r = reg_read64(base + UCIE_RX_PACKETS_RECEIVED);
-    if (r >= packets) {
-      break;
+    if (((linkStatus >> 0xfULL) & 0x1ULL) == 0) {
+      printf("setup_ucie_digital: link training never brought the link up\n");
     }
   }
 }

@@ -62,6 +62,33 @@ class ClockSourceAtFreqMHz(val freqMHz: Double)
   )
 }
 
+/** Counts transitions on a UCIe link's observation bumps and reports them at
+  * the end of simulation. A test uses this to check that the bumps bring-up
+  * probes with a scope are driven at the chip's pins.
+  */
+class DebugBumpMonitor(name: String)
+    extends BlackBox(Map("NAME" -> StringParam(name)))
+    with HasBlackBoxInline {
+  val io = IO(new Bundle {
+    val mux0 = Input(Bool())
+    val mux1 = Input(Bool())
+    val txData = Input(Bool())
+  })
+  setInline(
+    "DebugBumpMonitor.sv",
+    """module DebugBumpMonitor #(parameter NAME = "") (
+      |    input mux0, input mux1, input txData);
+      |  longint unsigned n_mux0 = 0, n_mux1 = 0, n_txData = 0;
+      |  always @(mux0) n_mux0++;
+      |  always @(mux1) n_mux1++;
+      |  always @(txData) n_txData++;
+      |  final $display("Debug bumps %s: mux0 %0d mux1 %0d txData %0d",
+      |      NAME, n_mux0, n_mux1, n_txData);
+      |endmodule
+      |""".stripMargin
+  )
+}
+
 /** Prints a clock's period whenever it settles on a new value: after three
   * consecutive posedge-to-posedge intervals of the same length, and only if
   * that length differs from the last one printed. Tests grep the log for the
@@ -285,11 +312,16 @@ class TestHarness(
 
     // The PHY bumps carry a single-ended mainband bypass clock; the PLL
     // reference pair and its RDAC bias are no longer bumps.
-    Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1).foreach { ucie =>
+    Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1).zipWithIndex.foreach { case (ucie, i) =>
       ucie.phy.bypassClk := ucieBypassClock
       ucie.phy.digitalBypassClk := ucieDigitalBypassClock
       ucie.phy.sidebandBypassClk := ucieSidebandBypassClock
       ucie.phy.refClk := ucieRefClock
+      val monitor = Module(new DebugBumpMonitor(s"chip$chipId.ucie$i"))
+      monitor.io.mux0 := ucie.debug.mux0
+      monitor.io.mux1 := ucie.debug.mux1
+      // Absent on a link built without the TX data debug lane.
+      monitor.io.txData := ucie.debug.txData.getOrElse(false.B)
     }
 
     Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1)
@@ -531,6 +563,71 @@ class IrisSpec extends AnyFunSpec {
         plusArgs = Seq(chip0PlusArgs),
         fast = true,
         debug = true
+      )
+    }
+
+    // The PhyTest programs bring-up runs on the chip (docs/ucie_bringup.md),
+    // run by the core through the SoC bus and UCIe register map, over the
+    // behavioral lanes and clocking tile.
+    // The loopback program turns every observation driver on for one LFSR run,
+    // with `mux0` on the TX divided clock and `mux1` on an RX data lane, and
+    // drives the TX debug lane. So every debug bump of both links must toggle,
+    // which shows the scope points reach the pins.
+    def checkDebugBumps(simLog: Path): Unit =
+      for (link <- Seq("chip0.ucie0", "chip0.ucie1")) {
+        val counts = Utils.debugBumpCounts(simLog, link)
+        assert(counts.keySet == Set("mux0", "mux1", "txData"))
+        for ((bump, n) <- counts) {
+          assert(n > 64, s"$link debug bump $bump only moved $n times")
+        }
+      }
+
+    it("should run phytest loopback test") {
+      implicit val p = new IrisConfig(sim = true)
+      checkDebugBumps(
+        Utils.simulateTopWithBinaries(
+          Utils.buildRoot / "Iris_should_run_phytest_loopback_test",
+          nChips = 1,
+          binaryPaths = Seq(Utils.root / "software/phytest-loopback.riscv"),
+          fast = true
+        )
+      )
+    }
+
+    it("should run phytest loopback test on the tapeout config") {
+      // The configuration that is taped out (16b serial TL, no TL monitors),
+      // with the serial TL on a 100 MHz external clock.
+      implicit val p = new IrisConfig(sim = false)
+      checkDebugBumps(
+        Utils.simulateTopWithBinaries(
+          Utils.buildRoot / "Iris_should_run_phytest_loopback_test_on_the_tapeout_config",
+          nChips = 1,
+          binaryPaths = Seq(Utils.root / "software/phytest-loopback.riscv"),
+          fast = true,
+          serialTLFreqMHz = Some(100)
+        )
+      )
+    }
+
+    it("should run phytest clocks test") {
+      implicit val p = new IrisConfig(sim = true)
+      Utils.simulateTopWithBinaries(
+        Utils.buildRoot / "Iris_should_run_phytest_clocks_test",
+        nChips = 1,
+        binaryPaths = Seq(Utils.root / "software/phytest-clocks.riscv"),
+        fast = true
+      )
+    }
+
+    it("should run phytest two-chip test") {
+      implicit val p = new IrisConfig(sim = true)
+      // Both chips run the one binary; the ring wires UCIe1 of each to UCIe0
+      // of the other.
+      Utils.simulateTopWithBinaries(
+        Utils.buildRoot / "Iris_should_run_phytest_two_chip_test",
+        nChips = 2,
+        binaryPaths = Seq(Utils.root / "software/phytest-two-chip.riscv"),
+        fast = true
       )
     }
 

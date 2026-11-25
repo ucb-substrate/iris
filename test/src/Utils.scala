@@ -172,10 +172,9 @@ script -e -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_d
       simScript
     ).call(stdout = os.Inherit, stderr = os.Inherit, cwd = simDir)
 
-    // The simulator's exit status does not say whether the test passed: VCS
-    // ends with status 0 after a `$fatal`, whether from SimTop's timeout or
-    // from a failed assertion. SimTop prints its success line only when the
-    // chips report success, so the log decides it.
+    // The simulator's exit status does not show a pass: VCS exits 0 after a
+    // `$fatal`, from SimTop's timeout or a failed assertion. SimTop prints its
+    // success line only when the chips report success, so check the log.
     val simLog = os.read(simDir / "simulation.log")
     val failure =
       Seq("Assertion failed", "Fatal:", "Test timed out!").find(simLog.contains)
@@ -196,5 +195,18 @@ script -e -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_d
     lines.foreach { l =>
       assert(log.contains(l), s"simulation log does not contain \"$l\"; see $simLog")
     }
+  }
+
+  /** The transition counts `DebugBumpMonitor` reported for one link, by bump
+    * name.
+    */
+  def debugBumpCounts(simLog: Path, link: String): Map[String, BigInt] = {
+    val line = os.read.lines(simLog)
+      .find(_.startsWith(s"Debug bumps $link:"))
+      .getOrElse(throw new AssertionError(s"no debug bump report for $link; see $simLog"))
+    "(\\w+) (\\d+)".r
+      .findAllMatchIn(line.stripPrefix(s"Debug bumps $link:"))
+      .map(m => m.group(1) -> BigInt(m.group(2)))
+      .toMap
   }
 }

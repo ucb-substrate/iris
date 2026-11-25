@@ -37,7 +37,7 @@ VEC_ARCHFLAGS = -march=rv64gcv_zfh_zvfh -mabi=$(ABI)
 CFLAGS  = -std=gnu99 -O2 -fno-common -fno-builtin-printf -Wall -specs=htif_nano.specs -Iinclude
 LDFLAGS = -specs=htif_nano.specs
 
-PROGRAMS = hello hello0 hello1 router ring-hello ucie-loopback ucie-digital-loopback tacit-always tacit-dma ucie-vec-memcpy multihart-vec-amo clock-div
+PROGRAMS = hello hello0 hello1 router ring-hello ucie-loopback ucie-digital-loopback tacit-always tacit-dma ucie-vec-memcpy multihart-vec-amo clock-div phytest-loopback phytest-clocks phytest-two-chip
 
 .DEFAULT_GOAL := default
 
@@ -53,6 +53,10 @@ PROGRAMS = hello hello0 hello1 router ring-hello ucie-loopback ucie-digital-loop
 
 %.riscv: %.o
 	$(GCC) $(LDFLAGS) $< -o $@
+
+# The PhyTest programs share their helpers through a header. Not ucie.h,
+# which is phony: naming it would regenerate it on every build.
+phytest-loopback.o phytest-clocks.o phytest-two-chip.o: phytest.h
 
 ucie-vec-memcpy.o: ucie-vec-memcpy.c
 	$(GCC) $(CFLAGS) $(VEC_ARCHFLAGS) -c $< -o $@
