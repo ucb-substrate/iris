@@ -322,14 +322,16 @@ static void test_loopback_lane(uintptr_t base) {
 }
 
 // The observation bumps, which `setup_ucie` leaves off. Only this test turns
-// them on and drives each: the TX data debug lane runs, the clock mux selects
-// the TX divided clock, and the RX lane `rxData` watches gets traffic. The
+// them on and drives each: the TX data debug lane runs, `mux0` watches the TX
+// divided clock, and `mux1` watches RX data lane 0, which gets traffic. The
 // simulation harness checks every bump toggled; on the bench, probe them with
 // a scope now. The debug lane only drives a bump, so software can check only
 // that it runs to completion without starving.
 static void test_observation(uintptr_t base) {
   enable_debug_drivers(base, 1);
-  pt_wr(base, UCIE_DEBUG_CLK_MUX_SEL, 1);
+  pt_wr(base, UCIE_DEBUG_MUX_SEL, UCIE_DEBUG_MUX_TX_DIV_CLK);
+  pt_wr(base, UCIE_DEBUG_MUX_SEL + UCIE_DEBUG_MUX_SEL_WIDTH,
+        UCIE_DEBUG_MUX_RX_DATA_LSB);
   pt_wr(base, UCIE_DEBUG_TX_TEST_MODE, UCIE_TX_TEST_MODE_LFSR);
   pt_wr(base, UCIE_DEBUG_TX_DATA_MODE, UCIE_DATA_MODE_FINITE);
   pt_wr(base, UCIE_DEBUG_TX_PACKETS_TO_SEND, N_PACKETS);
@@ -343,7 +345,8 @@ static void test_observation(uintptr_t base) {
               pt_rd(base, UCIE_TX_DEBUG_FIFO_UNDERFLOW), 0);
   pt_wr(base, UCIE_DEBUG_TX_FSM_RST, 1);
   pt_lfsr_check(base, N_PACKETS, "LFSR run with the observation drivers on");
-  pt_wr(base, UCIE_DEBUG_CLK_MUX_SEL, 0);
+  pt_wr(base, UCIE_DEBUG_MUX_SEL, 0);
+  pt_wr(base, UCIE_DEBUG_MUX_SEL + UCIE_DEBUG_MUX_SEL_WIDTH, 0);
   enable_debug_drivers(base, 0);
 }
 

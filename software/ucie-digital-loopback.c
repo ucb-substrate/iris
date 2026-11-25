@@ -9,9 +9,9 @@
 #include "ucie.h"
 
 // The forwarded clock's global delay, centred on the data: the code training
-// found on silicon, 29 taps on the simulation harness.
+// found on silicon, 51 taps on the simulation harness.
 #ifndef CENTRED_DELAY_TAPS
-#define CENTRED_DELAY_TAPS 29ULL
+#define CENTRED_DELAY_TAPS 51ULL
 #endif
 
 #define UCIE0_REG_BASE 0x200000UL

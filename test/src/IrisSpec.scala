@@ -70,24 +70,20 @@ class DebugBumpMonitor(name: String)
     extends BlackBox(Map("NAME" -> StringParam(name)))
     with HasBlackBoxInline {
   val io = IO(new Bundle {
-    val txClk = Input(Bool())
-    val rxClk = Input(Bool())
-    val rxData = Input(Bool())
-    val clkMux = Input(Bool())
+    val mux0 = Input(Bool())
+    val mux1 = Input(Bool())
     val txData = Input(Bool())
   })
   setInline(
     "DebugBumpMonitor.sv",
     """module DebugBumpMonitor #(parameter NAME = "") (
-      |    input txClk, input rxClk, input rxData, input clkMux, input txData);
-      |  longint unsigned n_txClk = 0, n_rxClk = 0, n_rxData = 0, n_clkMux = 0, n_txData = 0;
-      |  always @(txClk) n_txClk++;
-      |  always @(rxClk) n_rxClk++;
-      |  always @(rxData) n_rxData++;
-      |  always @(clkMux) n_clkMux++;
+      |    input mux0, input mux1, input txData);
+      |  longint unsigned n_mux0 = 0, n_mux1 = 0, n_txData = 0;
+      |  always @(mux0) n_mux0++;
+      |  always @(mux1) n_mux1++;
       |  always @(txData) n_txData++;
-      |  final $display("Debug bumps %s: txClk %0d rxClk %0d rxData %0d clkMux %0d txData %0d",
-      |      NAME, n_txClk, n_rxClk, n_rxData, n_clkMux, n_txData);
+      |  final $display("Debug bumps %s: mux0 %0d mux1 %0d txData %0d",
+      |      NAME, n_mux0, n_mux1, n_txData);
       |endmodule
       |""".stripMargin
   )
@@ -279,11 +275,10 @@ class TestHarness(
       ucie.phy.sidebandBypassClk := ucieSidebandBypassClock
       ucie.phy.refClk := ucieRefClock
       val monitor = Module(new DebugBumpMonitor(s"chip$chipId.ucie$i"))
-      monitor.io.txClk := ucie.debug.txClk
-      monitor.io.rxClk := ucie.debug.rxClk
-      monitor.io.rxData := ucie.debug.rxData
-      monitor.io.clkMux := ucie.debug.clkMux
-      monitor.io.txData := ucie.debug.txData
+      monitor.io.mux0 := ucie.debug.mux0
+      monitor.io.mux1 := ucie.debug.mux1
+      // Absent on a link built without the TX data debug lane.
+      monitor.io.txData := ucie.debug.txData.getOrElse(false.B)
     }
 
     Seq(chiptop.c2c_ucie0, chiptop.c2c_ucie1)
@@ -519,13 +514,14 @@ class IrisSpec extends AnyFunSpec {
     // The PhyTest programs bring-up runs on the chip (docs/ucie_bringup.md),
     // run by the core through the SoC bus and UCIe register map, over the
     // behavioral lanes and clocking tile.
-    // The loopback program turns every observation driver on for one LFSR run
-    // and drives the TX debug lane and every RX lane. So every debug bump of
-    // both links must toggle, which shows the scope points reach the pins.
+    // The loopback program turns every observation driver on for one LFSR run,
+    // with `mux0` on the TX divided clock and `mux1` on an RX data lane, and
+    // drives the TX debug lane. So every debug bump of both links must toggle,
+    // which shows the scope points reach the pins.
     def checkDebugBumps(simLog: String): Unit =
       for (link <- Seq("chip0.ucie0", "chip0.ucie1")) {
         val counts = Utils.debugBumpCounts(simLog, link)
-        assert(counts.keySet == Set("txClk", "rxClk", "rxData", "clkMux", "txData"))
+        assert(counts.keySet == Set("mux0", "mux1", "txData"))
         for ((bump, n) <- counts) {
           assert(n > 64, s"$link debug bump $bump only moved $n times")
         }

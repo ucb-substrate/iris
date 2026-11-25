@@ -149,8 +149,9 @@ Each `c2c_uciek` has two parts:
 - `phy`: `txData[16]`, `txValid`, `txTrack`, `txClkP`, `txClkN`, `rxData[16]`, `rxValid`,
   `rxTrack`, `rxClkP`, `rxClkN`, `sbTxClk`, `sbTxData`, `sbRxClk`, `sbRxData`, plus the four clock
   inputs of section 3.
-- `debug`: the observation outputs `txClk`, `rxClk`, `rxData`, `clkMux` and `txData`. Each is off
-  until software enables its driver.
+- `debug`: the observation outputs `mux0` and `mux1`, each watching any of ten clocks and data
+  taps through its own 16:1 mux (`UCIE_DEBUG_MUX_SEL`), and `txData`, the TX debug lane. Each is
+  off until software enables its driver.
 
 Chisel flattens the names with underscores, for example `c2c_ucie0_phy_bypassClk`.
 
@@ -246,7 +247,7 @@ what it read instead of stopping. The program exits nonzero if any check failed.
 
 | Program | Topology | What it covers |
 |---|---|---|
-| `phytest-loopback.c` | each link looped back onto itself (the single-chip harness, or a loopback board) | On both links: clock meters against the board clocks; LFSR run with distinct per-lane seeds; injected errors counted exactly once; `rxSelfSync` with every RX seed wrong; valid moved onto track at both ends; gated-clock bursts the UCIe way after the training in `phytest_bringup.md` §8.3, parking alternately and always low, with the forwarded clock centred (`PT_CENTRED_DELAY_TAPS` in `phytest.h`: 29 on the harness, the trained code on silicon); no RX words while parked; manual pattern into the capture SRAM; error-triggered capture; `rxStartMode` immediate; track counters; the loopback lane and its FIFO flags; per-lane fixed and inverted sources; one injected error found by lane, UI and class; the observation bumps (on for that test only) and the TX debug lane; the sideband tester |
+| `phytest-loopback.c` | each link looped back onto itself (the single-chip harness, or a loopback board) | On both links: clock meters against the board clocks; LFSR run with distinct per-lane seeds; injected errors counted exactly once; `rxSelfSync` with every RX seed wrong; valid moved onto track at both ends; gated-clock bursts the UCIe way after the training in `phytest_bringup.md` §8.3, parking alternately and always low, with the forwarded clock centred (`PT_CENTRED_DELAY_TAPS` in `phytest.h`: 51 on the harness, the trained code on silicon); no RX words while parked; manual pattern into the capture SRAM; error-triggered capture; `rxStartMode` immediate; track counters; the loopback lane and its FIFO flags; per-lane fixed and inverted sources; one injected error found by lane, UI and class; the observation bumps (on for that test only) and the TX debug lane; the sideband tester |
 | `phytest-clocks.c` | UCIe0 looped back | TX divider at /1, /2, /4 off the bypass pin; PHY test clock onto PLL8 /8, stopping the program (instead of hanging the bus) if a moved clock doesn't run; main clock onto PLL8 and PLL12; a PHY test clock too slow for the link, which must set both FIFO flags (below), and the recovery; TX queue capped at 8 words with the PHY test clock at twice the packet clock (at equal rates 8 runs dry and 10 holds); sideband clock onto PLL8 /10; every clock meter after every move, and no PLL lock lost |
 | `phytest-two-chip.c` | two chips, each one's UCIe1 wired to the other's UCIe0 (the two-chip ring, or two chips on a package) | an LFSR run each way; each RX hears only the TX wired to it; `rxManualCheck` scoring the partner's manual pattern against this chip's TX pattern SRAM, with one reference word deliberately wrong |
 

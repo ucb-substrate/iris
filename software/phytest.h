@@ -41,7 +41,7 @@
 // free-running clock but leaves a gated burst's first data UI with no edge.
 // On silicon, override it with the code mainband training finds.
 #ifndef PT_CENTRED_DELAY_TAPS
-#define PT_CENTRED_DELAY_TAPS 29ULL
+#define PT_CENTRED_DELAY_TAPS 51ULL
 #endif
 
 static int pt_failures = 0;
