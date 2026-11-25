@@ -264,13 +264,16 @@ is far too short on silicon next to a slow divided clock.
 
 Each chip arms the RX it is about to be sent to and tells its partner with a sideband packet on
 that link. It starts its own TX only after the partner has said the same of the RX that TX feeds.
-The chips need no host or shared clock, but they do need to start close together:
-- Each message is sent once. One sent before the partner has set up that link (still in `ucieRst`,
-  or before `pt_sb_reset`) is lost, and nothing resends it.
-- A chip waits `PT_TIMEOUT` (a few ms) for each message, then carries on alone.
+The chips need no host or shared clock, and needn't start together:
+- A chip resends its message every `RESEND_CYCLES` until the partner acknowledges it on the same
+  link. A message sent before the partner has set up that link (still in `ucieRst`, or before
+  `pt_sb_reset`) is lost, and a resend replaces it.
+- A packet that isn't one of the program's messages means the receiver came out of reset
+  mid-packet. The chip resets its receiver to realign, and the next resend gets through.
+- A chip waits up to `HANDSHAKE_TIMEOUT` (1000 × `PT_TIMEOUT`, about 2 s at 1 GHz) for each
+  phase, then skips it.
 
-So start both chips within a few milliseconds of each other. On the bench, release both resets
-together after both binaries are loaded.
+So start both chips within about a second of each other.
 
 ### Running them in simulation
 

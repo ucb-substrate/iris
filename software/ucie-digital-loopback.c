@@ -8,6 +8,12 @@
 #include "router.h"
 #include "ucie.h"
 
+// The forwarded clock's global delay, centred on the data: the code training
+// found on silicon, 29 taps on the simulation harness.
+#ifndef CENTRED_DELAY_TAPS
+#define CENTRED_DELAY_TAPS 29ULL
+#endif
+
 #define UCIE0_REG_BASE 0x200000UL
 #define UCIE1_REG_BASE 0x208000UL
 #define ROUTER_MMIO 0x4000
@@ -52,10 +58,12 @@ int main(void) {
   printf("Got chip ID: %d\n", chip_id);
 
   printf("Setting up UCIe0 (digital controller)\n");
+  set_global_delay(UCIE0_REG_BASE, CENTRED_DELAY_TAPS);
   setup_ucie_digital(UCIE0_REG_BASE);
   printf("UCIe0 RX lanes held back %ld UI to align words\n",
          reg_read64(UCIE0_REG_BASE + UCIE_RX_UI_DELAY));
   printf("Setting up UCIe1 (digital controller)\n");
+  set_global_delay(UCIE1_REG_BASE, CENTRED_DELAY_TAPS);
   setup_ucie_digital(UCIE1_REG_BASE);
   printf("UCIe1 RX lanes held back %ld UI to align words\n",
          reg_read64(UCIE1_REG_BASE + UCIE_RX_UI_DELAY));

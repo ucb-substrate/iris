@@ -161,6 +161,9 @@
 #define UCIE_RX_UI_DELAY 0x39e0ULL
 #define UCIE_RX_UI_DELAY_WIDTH 0x8ULL
 #define UCIE_RX_VALID_START_THRESHOLD 0x3a70ULL
+#define UCIE_DEBUG_TXCTL_SAMPLE_NEGEDGE 0x3a78ULL
+#define UCIE_RX_AUTO_SEED 0x3a80ULL
+#define UCIE_TL_RX_FIFO_OVERFLOW 0x3a88ULL
 #define UCIE_PCIE_EXT_CAP_ID 0x4000ULL
 #define UCIE_DVSEC_VENDOR_ID 0x4004ULL
 #define UCIE_DVSEC_ID 0x4008ULL
@@ -282,7 +285,25 @@
 #define UCIE_PLL_LOCK_LOST 0x10138ULL
 #define UCIE_CLK_GATE_EDGE_SEL 0x10140ULL
 #define UCIE_CLK_PHASE_AUTO_APPLY 0x10148ULL
-#define UCIE_RATE_CFG 0x10180ULL
+#define UCIE_PLL8_AUTO_EN 0x10150ULL
+#define UCIE_PLL8_KP 0x10158ULL
+#define UCIE_PLL8_KI 0x10160ULL
+#define UCIE_PLL8_CODE_INIT 0x10168ULL
+#define UCIE_PLL8_CODE_BYP 0x10170ULL
+#define UCIE_PLL8_DBIAS 0x10178ULL
+#define UCIE_PLL12_AUTO_EN 0x10180ULL
+#define UCIE_PLL12_KP 0x10188ULL
+#define UCIE_PLL12_KI 0x10190ULL
+#define UCIE_PLL12_CODE_INIT 0x10198ULL
+#define UCIE_PLL12_CODE_BYP 0x101a0ULL
+#define UCIE_PLL12_DBIAS 0x101a8ULL
+#define UCIE_PLL8_DCOARSE 0x101b0ULL
+#define UCIE_PLL8_CODE_FULL 0x101b8ULL
+#define UCIE_PLL8_CODE_INT 0x101c0ULL
+#define UCIE_PLL12_CODE_FULL 0x101c8ULL
+#define UCIE_PLL12_CODE_INT 0x101d0ULL
+#define UCIE_CLK_CFG_GATE_DWELL 0x101d8ULL
+#define UCIE_RATE_CFG 0x10200ULL
 #define UCIE_RATE_CFG_WIDTH 0x8ULL
 
 // === Constants ===
@@ -317,7 +338,7 @@
 #define UCIE_TX_CTL_ENN_LSB 0x28ULL
 #define UCIE_TX_CTL_ENP_EQ_LSB 0x24ULL
 #define UCIE_TX_CTL_ENN_EQ_LSB 0x20ULL
-#define UCIE_TRAIN_LFSR_SEED 0x123456789abcdefULL
+#define UCIE_TRAIN_LFSR_SEED 0x8123456789abcdefULL
 #define UCIE_LFSR_SEED_LANE_STEP 0x1111ULL
 #define UCIE_TRAIN_DATA_LANES 0x10ULL
 #define UCIE_TRAIN_VALID_LANE 0x10ULL
@@ -417,6 +438,12 @@ static inline void reset_dividers(uintptr_t base) {
   reg_write64(base + UCIE_RX_DIVIDER_RST, 0x0ULL);
 }
 static inline void set_main_clk(uintptr_t base, uint64_t src, uint64_t div) {
+  if (src == 0 || src == 2) {
+    reg_write64(base + UCIE_PLL8_EN, 0x1ULL);
+  }
+  if (src == 1) {
+    reg_write64(base + UCIE_PLL12_EN, 0x1ULL);
+  }
   reg_write64(base + UCIE_MAIN_CLK_SEL, src);
   reg_write64(base + UCIE_TX_CLK_DIV, div);
   apply_clk_cfg(base);
@@ -426,9 +453,12 @@ static inline void set_tx_phase(uintptr_t base, uint64_t half_cycles) {
   apply_clk_cfg(base);
 }
 static inline void use_internal_clk(uintptr_t base, uint64_t phytest_src, uint64_t phytest_div) {
-  reg_write64(base + UCIE_PLL8_EN, 0x1ULL);
-  reg_write64(base + UCIE_PLL12_EN, 0x1ULL);
-  reg_write64(base + UCIE_X2_EN, 0x1ULL);
+  if (phytest_src == 0) {
+    reg_write64(base + UCIE_PLL8_EN, 0x1ULL);
+  }
+  if (phytest_src == 1) {
+    reg_write64(base + UCIE_PLL12_EN, 0x1ULL);
+  }
   reg_write64(base + UCIE_PHY_TEST_CLK_SRC_SEL, phytest_src);
   reg_write64(base + UCIE_PHY_TEST_CLK_DIV, phytest_div);
   reg_write64(base + UCIE_PHY_TEST_CLK_BYPASS_EN, 0x0ULL);
@@ -574,12 +604,15 @@ static inline void setup_ucie_digital(uintptr_t base) {
   reg_write64(base + UCIE_RST, 0x0ULL);
   set_clk_en(base, 0x0ULL);
   set_rx_clk_en(base, 0x0ULL);
-  set_global_delay(base, 0x1dULL);
   reset_dividers(base);
   set_clk_en(base, 0x1ULL);
   set_rx_clk_en(base, 0x1ULL);
   for (int lane = 0; lane < 20; lane++) {
-    write_txctl(base, lane, UCIE_TXCTL_TILE_OFS, UCIE_ENABLE_TX_CTL);
+    {
+      uint64_t tile;
+      tile = reg_read64(base + UCIE_TXCTL + lane * UCIE_TXCTL_WIDTH + UCIE_TXCTL_TILE_OFS);
+      write_txctl(base, lane, UCIE_TXCTL_TILE_OFS, ((tile & UCIE_TX_CTL_DELAY_MASK) | (UCIE_ENABLE_TX_CTL & ~UCIE_TX_CTL_DELAY_MASK)));
+    }
   }
   for (int lane = 0; lane < 18; lane++) {
     write_rxctl(base, lane, UCIE_RXCTL_ZEN_OFS, 0x1ULL);

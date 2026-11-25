@@ -4,8 +4,9 @@
 //
 // Each direction is tested in its own phase. A chip starts a TX only after
 // the partner reports, over the sideband of the same link, that the RX it
-// feeds is armed. The programs need nothing else to stay in step: no shared
-// clock, no host, no matching code timing.
+// feeds is armed. Each report is resent until the partner acknowledges it, so
+// the chips may start at different times. The programs need nothing else to
+// stay in step: no shared clock, no host, no matching code timing.
 //
 //   my UCIe1 TX --> partner UCIe0 RX     my UCIe0 sideband --> partner UCIe1
 //   my UCIe0 TX --> partner UCIe1 RX     my UCIe1 sideband --> partner UCIe0
@@ -17,16 +18,57 @@
 #define N_MANUAL (8 * PERIOD)
 
 #define ARMED(phase) (0x5054000041524d00ULL | (phase))
+#define ACKED(phase) (0x5054000041434b00ULL | (phase))
+#define IS_MESSAGE(p) \
+  (((p) & ~0xffULL) == ARMED(0) || ((p) & ~0xffULL) == ACKED(0))
 
-// Tells the partner, on the sideband of `rx`'s link, that `rx` is armed. Then
-// waits on the sideband of `tx`'s link for the partner to say the RX that
-// `tx` feeds is armed.
+// Core cycles between resends of an unacknowledged message, and the longest
+// a handshake waits for the partner. A message sent before the partner has
+// set up its link is lost, so only a resend reaches a partner that started
+// late.
+#define RESEND_CYCLES 50000ULL
+#define HANDSHAKE_TIMEOUT (1000 * PT_TIMEOUT)
+
+// Pops a sideband packet from `base` if one is waiting. A packet that isn't
+// one of ours means the receiver came out of reset mid-packet and counts
+// bits out of step, so realign it. The sender's next resend gets through.
+static int sb_poll(uintptr_t base, uint64_t *packet) {
+  if (!pt_rd(base, UCIE_SB_RX_VALID)) return 0;
+  *packet = pt_rd(base, UCIE_SB_RX_PACKET);
+  pt_wr(base, UCIE_SB_RX_POP, 1);
+  if (IS_MESSAGE(*packet)) return 1;
+  pt_wr(base, UCIE_SB_RX_RST, 1);
+  return 0;
+}
+
+// Tells the partner, on the sideband of `rx`'s link, that `rx` is armed, and
+// resends until the partner acknowledges on that link. Meanwhile waits on the
+// sideband of `tx`'s link for the partner to say the RX that `tx` feeds is
+// armed, and acknowledges every copy. Done when both have happened. A packet
+// for another phase is a late copy, or the partner running ahead. It is
+// dropped; if it matters, a resend brings it back.
 static int handshake(uintptr_t rx, uintptr_t tx, uint64_t phase) {
-  pt_sb_send(rx, ARMED(phase));
-  uint64_t got;
-  if (!pt_sb_recv(tx, &got)) return 0;
-  PT_CHECK_EQ("partner's armed message", got, ARMED(phase));
-  return got == ARMED(phase);
+  int acked = 0, armed = 0, sent = 0;
+  uint64_t start = rdcycle(), last_send = 0, got;
+  while (!(acked && armed)) {
+    uint64_t now = rdcycle();
+    if (now - start > HANDSHAKE_TIMEOUT) {
+      PT_CHECK(0, "partner never %s phase %lu",
+               armed ? "acknowledged" : "armed its RX for", phase);
+      return 0;
+    }
+    if (!acked && (!sent || now - last_send > RESEND_CYCLES)) {
+      if (!pt_sb_send(rx, ARMED(phase))) return 0;
+      last_send = now;
+      sent = 1;
+    }
+    if (sb_poll(rx, &got) && got == ACKED(phase)) acked = 1;
+    if (sb_poll(tx, &got) && got == ARMED(phase)) {
+      armed = 1;
+      if (!pt_sb_send(tx, ACKED(phase))) return 0;
+    }
+  }
+  return 1;
 }
 
 // One direction: an LFSR run from `tx` here to the partner, while `rx` here

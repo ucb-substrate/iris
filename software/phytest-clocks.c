@@ -55,7 +55,8 @@ static void check_packet_clocks(uintptr_t base, uint64_t mhz) {
 }
 
 static void test_sideband_on_pll(uintptr_t base) {
-  // 800 MHz, /10 off PLL8.
+  // 800 MHz, /10 off PLL8, which this apply turns on if it isn't already.
+  pt_wr(base, UCIE_PLL8_EN, 1);
   pt_wr(base, UCIE_SB_CLK_SRC_SEL, SRC_PLL8);
   pt_wr(base, UCIE_SB_CLK_DIV, SB_DIV10);
   pt_wr(base, UCIE_SB_CLK_BYPASS_EN, 0);
@@ -88,12 +89,12 @@ int main(void) {
   check_packet_clocks(base, 125);
   pt_lfsr_check(base, N_PACKETS, "bypass /4");
 
-  // Both PLLs up, and the PHY test clock onto PLL8 /8, 1 GHz. The apply
+  // PLL8 up, and the PHY test clock onto it, /8 = 1 GHz. The apply
   // holds the PHY test clock's gate shut until PLL8 has locked.
   pt_begin("ucie0", "PHY test clock onto PLL8 /8");
   use_internal_clk(base, SRC_PLL8, PHY_TEST_DIV8);
   require_clocks(base, "PHY test clock onto PLL8 /8");
-  pt_wait_eq(base, UCIE_PLL_LOCK_OBSERVED, 3, "both PLLs to lock");
+  pt_wait_eq(base, UCIE_PLL_LOCK_OBSERVED, 1, "PLL8 to lock");
   pt_setup(base);
   pt_check_meter(base, UCIE_CLK_METER_PHY_TEST, 1000, "PHY test on PLL8 /8");
   pt_lfsr_check(base, N_PACKETS, "PHY test clock on PLL8, main on bypass");
