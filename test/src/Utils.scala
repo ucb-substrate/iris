@@ -64,10 +64,14 @@ script -e -f -c "./simulation </dev/null 2> >(spike-dasm > simulation.out)" simu
       sourceFilesList: Path,
       incDirs: Seq[Path] = Seq.empty,
       loadmem: Option[Path] = None,
-      debug: Boolean = false
+      debug: Boolean = false,
+      xprop: Boolean = false
   ) = {
     val dramsim_ini = root / "testchipip" / "src" / "main" / "resources" / "dramsim2_ini"
     val debugCompileFlags = if (debug) " +define+DEBUG -debug_access+all -kdb -lca" else ""
+    // X-propagation: `if`/`case` on an X condition merges both branches
+    // (T-merge) instead of taking the else/default branch.
+    val xpropCompileFlags = if (xprop) " -xprop=tmerge" else ""
     val debugRuntimeFlag = if (debug) " +fsdbfile=waveform.fsdb" else ""
     os.makeDir.all(path / os.up)
     os.write.over(
@@ -87,7 +91,7 @@ vcs \\
   +define+layer$$Verification$$Assert$$Temporal \\
   +define+layer$$Verification$$Assume$$Temporal \\
   +define+layer$$Verification$$Cover$$Temporal \\
-  +define+VCS +define+FSDB +define+RANDOMIZE_MEM_INIT +define+RANDOMIZE_REG_INIT +define+RANDOMIZE_GARBAGE_ASSIGN +define+RANDOMIZE_INVALID_ASSIGN$debugCompileFlags \\
+  +define+VCS +define+FSDB +define+RANDOMIZE_MEM_INIT +define+RANDOMIZE_REG_INIT +define+RANDOMIZE_GARBAGE_ASSIGN +define+RANDOMIZE_INVALID_ASSIGN$debugCompileFlags$xpropCompileFlags \\
   -o simulation -Mdir=vcs-sources
 script -e -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_dir=${dramsim_ini.toString}${loadmem.map(p => s" +loadmem=${p.toString}").getOrElse("")}$debugRuntimeFlag +permissive-off placeholder-binary </dev/null 2> >(spike-dasm > simulation.out)" simulation.log
 """
@@ -116,8 +120,10 @@ script -e -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_d
       fast: Boolean = false,
       debug: Boolean = false,
       serialTLFreqMHz: Option[Double] = None,
-      memTrafficMonitor: Boolean = false
-  )(implicit p: Parameters): String = {
+      memTrafficMonitor: Boolean = false,
+      clockTapMonitor: Boolean = false,
+      xprop: Boolean = false
+  )(implicit p: Parameters): Path = {
     binaryPaths.zipWithIndex.foreach { case (path, i) =>
       assert(
         os.exists(path),
@@ -135,7 +141,7 @@ script -e -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_d
     os.makeDir.all(artifactsDir)
 
     ChiselStage.emitSystemVerilogFile(
-      new SimTop(nChips, binaryPaths, plusArgs, fast, serialTLFreqMHz, memTrafficMonitor),
+      new SimTop(nChips, binaryPaths, plusArgs, fast, serialTLFreqMHz, memTrafficMonitor, clockTapMonitor),
       args = Array(
         "--target-dir",
         sourceDir.toString
@@ -157,7 +163,8 @@ script -e -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_d
       sourceFilesList,
       incDirs = os.walk(sourceDir).filter(os.isDir) ++ Seq(sourceDir),
       loadmem = if (fast) Some(binaryPaths(0)) else None,
-      debug = debug
+      debug = debug,
+      xprop = xprop
     )
 
     os.proc(
@@ -177,16 +184,26 @@ script -e -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_d
         s"simulation log reports \"$f\""
       ) + s"; see ${simDir / "simulation.log"}"
     )
-    simLog
+    simDir / "simulation.log"
+  }
+
+  /** Asserts that a passing simulation's log contains each of `lines`, e.g. a
+    * program's own pass message, so a test cannot pass by a path that skips it.
+    */
+  def assertLogContains(simLog: Path, lines: String*): Unit = {
+    val log = os.read(simLog)
+    lines.foreach { l =>
+      assert(log.contains(l), s"simulation log does not contain \"$l\"; see $simLog")
+    }
   }
 
   /** The transition counts `DebugBumpMonitor` reported for one link, by bump
     * name.
     */
-  def debugBumpCounts(simLog: String, link: String): Map[String, BigInt] = {
-    val line = simLog.linesIterator
+  def debugBumpCounts(simLog: Path, link: String): Map[String, BigInt] = {
+    val line = os.read.lines(simLog)
       .find(_.startsWith(s"Debug bumps $link:"))
-      .getOrElse(throw new AssertionError(s"no debug bump report for $link"))
+      .getOrElse(throw new AssertionError(s"no debug bump report for $link; see $simLog"))
     "(\\w+) (\\d+)".r
       .findAllMatchIn(line.stripPrefix(s"Debug bumps $link:"))
       .map(m => m.group(1) -> BigInt(m.group(2)))

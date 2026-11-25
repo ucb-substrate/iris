@@ -1,7 +1,7 @@
 // two-chip UCIe RVV memcpy test
 //
-// hart 0 is the Shuttle/OPU core
-// hart 1 is the Rocket tile with Saturn DMA
+// harts 0 and 1 are the Shuttle/OPU cores
+// hart 2 is the Rocket tile with Saturn DMA
 // BENCH_HART_ID picks which hart runs this test
 
 #include <stdint.h>
@@ -24,10 +24,11 @@
 #define COPY_BYTES 256
 #endif
 
-// Which hart runs the test. Hart 1 is the Saturn-DMA-only rocket tile added
-// by IrisConfig's "Saturn DMA" line. Tunable: -DBENCH_HART_ID=<n>.
+// Which hart runs the test. Hart 2 is the Saturn-DMA-only rocket tile added
+// by IrisConfig's "Saturn DMA" line (the two ShuttleTiles are harts 0 and 1).
+// Tunable: -DBENCH_HART_ID=<n>.
 #ifndef BENCH_HART_ID
-#define BENCH_HART_ID 1
+#define BENCH_HART_ID 2
 #endif
 
 // Aligned to the 32-byte beat so the natural-alignment path is exercised.
