@@ -32,21 +32,25 @@ object GenUcieHeader {
     // everything that layout depends on. Address, moduleId and the clock
     // distribution netlist do not reach it: the offsets are relative to each
     // port's own MMIO base, the moduleId only names modules, and the netlist is
-    // physical design.
+    // physical design. Nor does `hasTxDebugLane`: a port without the lane
+    // keeps its registers' slots, holding nothing.
     val canonical = ports.map(
       _.copy(
         address = ports.head.address,
         moduleId = ports.head.moduleId,
-        clkDistLayout = ports.head.clkDistLayout
+        clkDistLayout = ports.head.clkDistLayout,
+        hasTxDebugLane = true
       )
     )
     require(
       canonical.forall(_ == canonical.head),
       "UCIe ports must share a register layout, but their parameters differ " +
-        s"beyond address, moduleId and clock distribution: ${canonical.distinct.mkString("\n")}"
+        s"beyond address, moduleId, clock distribution and TX debug lane: ${canonical.distinct.mkString("\n")}"
     )
+    // Rendered with the lane, so its registers come out as real ones; on a
+    // port without it they read 0 and drop writes.
     edu.berkeley.cs.uciedigital.tilelink.GenUcieHeader
-      .render(ports.head, regenCommand)
+      .render(canonical.head, regenCommand)
   }
 
   def main(args: Array[String]): Unit = {
