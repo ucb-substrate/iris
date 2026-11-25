@@ -1,9 +1,9 @@
 // PhyTest bring-up helpers, on top of the generated ucie.h.
 //
-// Written for the lab as much as for simulation: every wait is bounded, and
-// every check prints what it expected and what it read instead of stopping,
-// so one run reports everything that is wrong. A program calls
-// `pt_finish()` at the end, which exits nonzero if any check failed.
+// For the lab and for simulation. Every wait is bounded. A failed check
+// prints what it expected and what it read, then continues, so one run
+// reports every problem. A program calls `pt_finish()` at the end; it exits
+// nonzero if any check failed.
 
 #ifndef __PHYTEST_H__
 #define __PHYTEST_H__
@@ -25,8 +25,8 @@
 #define PT_MAINBAND_LANES (UCIE_TRACK_LANE + 1)
 #define PT_ALL_LANES_MASK ((1ULL << UCIE_NUM_TEST_LANES) - 1)
 
-// Bounds on every wait, in core cycles. Generous: on silicon an MMIO read is
-// quick next to a slow divided clock, so a bound counted in reads is not.
+// Bound on every wait, in core cycles, not reads: on silicon an MMIO read is
+// fast next to a slow divided clock. The bound is generous.
 #define PT_TIMEOUT 2000000ULL
 
 // The chip clock the UCIe clock register block runs on, in MHz: the rate the
@@ -36,10 +36,10 @@
 #endif
 
 // Global delay taps that centre the forwarded clock on the data of a
-// looped-back link at 16 GT/s on the Iris harness, as the UCIe repo's tests
-// and `setup_ucie_digital` use. Out of reset the line is at its longest, which
-// is fine for a free-running clock but samples a gated burst's first data UI
-// with no edge. On silicon, override it with the code mainband training finds.
+// looped-back link at 16 GT/s on the Iris harness (as in the UCIe repo's tests
+// and `setup_ucie_digital`). The reset value, the longest delay, works for a
+// free-running clock but leaves a gated burst's first data UI with no edge.
+// On silicon, override it with the code mainband training finds.
 #ifndef PT_CENTRED_DELAY_TAPS
 #define PT_CENTRED_DELAY_TAPS 29ULL
 #endif
@@ -106,9 +106,9 @@ static inline int pt_wait_eq(uintptr_t base, uint64_t reg, uint64_t want,
   return 1;
 }
 
-// Waits for the RX to hand over `n` more idle words than it had: the RX
-// datapath is out of reset, and a forwarded clock is arriving. The counter is
-// 32 bits and free running, so the difference is taken modulo that.
+// Waits for `n` more RX idle words, which shows the RX datapath is out of
+// reset and a forwarded clock is arriving. The counter is a free-running
+// 32-bit count, so the difference is taken modulo 2^32.
 static inline int pt_wait_idle_words(uintptr_t base, uint32_t n) {
   uint32_t w0 = (uint32_t)pt_rd(base, UCIE_RX_IDLE_WORDS_OBSERVED);
   uint64_t start = rdcycle();
@@ -178,10 +178,9 @@ static inline void pt_check_fifo_flags(uintptr_t base, const char *what) {
 
 // ===== Clock meters =====
 
-// MHz of one of the clock meters (`UCIE_CLK_METER_*`), given the chip clock
-// the meters count against. A meter in the clock register block answers
-// whatever state the rest of the link is in, so this is safe before the
-// PhyTest registers are.
+// Reads a clock meter (`UCIE_CLK_METER_*`) in MHz, given the chip clock the
+// meters count against. The meters respond in any link state, so this works
+// before the PhyTest registers do.
 static inline uint64_t pt_meter_mhz(uintptr_t base, uint64_t reg,
                                     uint64_t chip_mhz) {
   pt_wait_cycles(4 * UCIE_CLK_METER_WINDOW_CYCLES);
@@ -198,10 +197,9 @@ static inline void pt_check_meter(uintptr_t base, uint64_t reg, uint64_t mhz,
 
 // ===== Runs =====
 
-// Programs a finite mainband run of `n` packets each way and resets both
-// FSMs, which reseeds the LFSRs. Starts nothing: options that need the RX
-// datapath reset to have released first (`txClkGate`) go in between this
-// and `pt_go`.
+// Programs a finite mainband run of `n` packets each way, then resets both
+// FSMs, which reseeds the LFSRs. It starts nothing. Set options that need the
+// RX datapath out of reset (`txClkGate`) between this and `pt_go`.
 static inline void pt_arm(uintptr_t base, uint64_t mode, uint64_t n) {
   pt_wr(base, UCIE_TEST_TARGET, UCIE_TEST_TARGET_MAINBAND);
   pt_wr(base, UCIE_TX_TEST_MODE, mode);
@@ -273,9 +271,9 @@ static inline uint32_t pt_captured(uintptr_t base, int lane, int entry) {
   return (uint32_t)pt_rd(base, UCIE_RX_DATA_CHUNK);
 }
 
-// A manual pattern word: distinct per row and lane, with the framing
-// waveform on valid. A mainband run reads the loopback lane as zero, so its
-// slot is zero too, which a loopback-lane run overrides.
+// A manual pattern word, distinct per row and lane, with the framing waveform
+// on valid. The loopback lane's slot is zero because a mainband run reads
+// that lane as zero. A loopback-lane run overrides it.
 static inline uint32_t pt_pattern_word(int row, int lane) {
   if (lane == UCIE_VALID_LANE) return (uint32_t)UCIE_DEFAULT_VALID;
   if (lane == UCIE_LOOPBACK_LANE) return 0;

@@ -1,11 +1,11 @@
-// PhyTest between two chips, each running this program, with UCIe1 of each
-// wired to UCIe0 of the other: the two-chip ring in simulation, or two
+// PhyTest between two chips, each running this program. UCIe1 of each chip
+// is wired to UCIe0 of the other: the two-chip ring in simulation, or two
 // chips on a package.
 //
-// Each direction is tested in its own phase. A chip only starts a TX once
-// the partner has said, over the sideband of the same link, that the RX it
-// feeds is armed, so the two programs need nothing else to keep in step:
-// not a shared clock, not a host, not matching code timing.
+// Each direction is tested in its own phase. A chip starts a TX only after
+// the partner reports, over the sideband of the same link, that the RX it
+// feeds is armed. The programs need nothing else to stay in step: no shared
+// clock, no host, no matching code timing.
 //
 //   my UCIe1 TX --> partner UCIe0 RX     my UCIe0 sideband --> partner UCIe1
 //   my UCIe0 TX --> partner UCIe1 RX     my UCIe1 sideband --> partner UCIe0
@@ -18,9 +18,9 @@
 
 #define ARMED(phase) (0x5054000041524d00ULL | (phase))
 
-// Tells the partner, on the sideband of `rx`'s link, that `rx` is armed, and
-// waits on the sideband of `tx`'s link for the partner to say the same of
-// the RX that `tx` feeds.
+// Tells the partner, on the sideband of `rx`'s link, that `rx` is armed. Then
+// waits on the sideband of `tx`'s link for the partner to say the RX that
+// `tx` feeds is armed.
 static int handshake(uintptr_t rx, uintptr_t tx, uint64_t phase) {
   pt_sb_send(rx, ARMED(phase));
   uint64_t got;

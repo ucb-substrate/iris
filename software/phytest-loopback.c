@@ -79,16 +79,16 @@ static void test_valid_on_track(uintptr_t base) {
   pt_wr(base, UCIE_RX_VALID_LANE_SEL, UCIE_DEFAULT_VALID_LANE_SEL);
 }
 
-// Bursts with the forwarded clock gated between them, the way the UCIe
-// controller parks it. The RX lanes only deserialize while clock edges
-// arrive, so this is the real receiver stopping and restarting.
-// UCIe's clock gating at the reset values: no preamble and a packet of
-// postamble, parked high and low in turn, then always low. A packet is enough
-// once the RX dividers have been realigned behind the parked clock and one 40
-// UI gap has moved the RX word boundary so that every burst ends 23 UI into
-// an RX word (ucie/docs/phytest_bringup.md, section 8). With no preamble, the
-// first edge after a park has to sample the burst's first data UI, so the
-// forwarded clock is centred for this test and put back after it.
+// Bursts with the forwarded clock gated between them, as the UCIe controller
+// parks it. The RX lanes deserialize only on clock edges, so this stops and
+// restarts the real receiver.
+// Gating uses the UCIe reset values: no preamble, one packet of postamble.
+// The clock parks high and low in turn, then always low. One packet is enough
+// after the RX dividers are realigned behind the parked clock and one 40 UI
+// gap moves the RX word boundary so every burst ends 23 UI into an RX word
+// (ucie/docs/phytest_bringup.md, section 8). With no preamble, the first edge
+// after a park must sample the burst's first data UI, so the test centres the
+// forwarded clock and restores it afterwards.
 static void test_gated_bursts(uintptr_t base) {
   const uint64_t n = 24;
   const uint64_t phase = pt_rd(base, UCIE_CLK_PHASE_SEL);
@@ -101,9 +101,9 @@ static void test_gated_bursts(uintptr_t base) {
   pt_wr(base, UCIE_RX_BURST_MODE, 1);
   for (int alternate = 1; alternate >= 0; alternate--) {
     pt_wr(base, UCIE_TX_CLK_PARK_ALTERNATE, alternate);
-    // Gated only after `pt_arm`: its RX datapath reset needs clock edges to
-    // release. Then the dividers realigned behind the parked clock, so the
-    // next burst's first edge samples its first data UI.
+    // Gate only after `pt_arm`, because its RX datapath reset needs clock
+    // edges to release. Then realign the dividers behind the parked clock, so
+    // the next burst's first edge samples its first data UI.
     pt_arm(base, UCIE_TX_TEST_MODE_LFSR, 1);
     pt_wr(base, UCIE_TX_CLK_GATE, 1);
     pt_wait_cycles(256);
@@ -143,6 +143,8 @@ static void test_gated_bursts(uintptr_t base) {
   set_clk_en(base, 0);
   set_rx_clk_en(base, 0);
   pt_wr(base, UCIE_CLK_PHASE_SEL, phase);
+  apply_clk_cfg(base);
+  pt_wait_clk_cfg(base);
   reset_dividers(base);
   set_clk_en(base, 1);
   set_rx_clk_en(base, 1);
@@ -185,9 +187,9 @@ static void test_manual_capture(uintptr_t base) {
   pt_wr(base, UCIE_TX_MANUAL_REPEAT_PERIOD, 0);
 }
 
-// An error-triggered capture: two lanes carry the same stream, so one shows
-// what the other should have received, and the SRAM has to hold exactly the
-// one flipped bit.
+// An error-triggered capture. Two lanes send the same stream, so one shows
+// what the other should have received. The SRAM must hold exactly the one
+// flipped bit.
 #define TWIN 0
 #define VICTIM 1
 static uint64_t twin_seed(int lane) {
@@ -227,9 +229,10 @@ static void test_error_capture(uintptr_t base) {
   }
   pt_check_errors(base, PT_MAINBAND_MASK, one_on_victim, "error capture run");
   pt_wr(base, UCIE_RX_PAUSE_COUNTERS, 0);
+  // Back to the reset values: half the SRAM after the trigger, every lane.
   pt_wr(base, UCIE_RX_CAPTURE_MODE, UCIE_CAPTURE_MODE_FIRST);
-  pt_wr(base, UCIE_RX_CAPTURE_POST_TRIGGER, 0);
-  pt_wr(base, UCIE_RX_TRIGGER_LANE_MASK, 0);
+  pt_wr(base, UCIE_RX_CAPTURE_POST_TRIGGER, UCIE_SRAM_PACKETS / 2);
+  pt_wr(base, UCIE_RX_TRIGGER_LANE_MASK, (1ULL << UCIE_NUM_TEST_LANES) - 1);
   pt_wr(base, UCIE_TX_INJECT_LANE, 0);
   reset_fsms(base);
 }
@@ -278,7 +281,7 @@ static void test_track(uintptr_t base) {
   printf("[%s] track clock lands on %s UIs\n", pt_port,
          even == ones ? "even" : "odd");
   pt_wr(base, UCIE_TX_TRACK_CLK, 0);
-  pt_wr(base, UCIE_TX_TRACK_WORD, 0);
+  pt_wr(base, UCIE_TX_TRACK_WORD, UCIE_DEFAULT_TRACK);
 }
 
 // ===== Loopback lane, debug lane, sideband =====
@@ -318,12 +321,12 @@ static void test_loopback_lane(uintptr_t base) {
   reset_fsms(base);
 }
 
-// The observation bumps, which `setup_ucie` leaves off: on for this test
-// alone, with something on each -- the TX data debug lane running, the clock
-// mux on the TX divided clock, and traffic on the RX lane `rxData` watches.
-// The simulation harness checks every bump moved; on the bench, this is when
-// to look with a scope. The debug lane only drives a bump, so from here all
-// that can be checked is that it runs to completion without starving.
+// The observation bumps, which `setup_ucie` leaves off. Only this test turns
+// them on and drives each: the TX data debug lane runs, the clock mux selects
+// the TX divided clock, and the RX lane `rxData` watches gets traffic. The
+// simulation harness checks every bump toggled; on the bench, probe them with
+// a scope now. The debug lane only drives a bump, so software can check only
+// that it runs to completion without starving.
 static void test_observation(uintptr_t base) {
   enable_debug_drivers(base, 1);
   pt_wr(base, UCIE_DEBUG_CLK_MUX_SEL, 1);
@@ -375,9 +378,10 @@ static uint64_t err_positions(uintptr_t base, int lane) {
   return pt_rd(base, UCIE_RX_ERR_POS_MASK);
 }
 
-// Victims and aggressors: one lane held at a static level, one inverted,
-// clean when the RX expects the same; then the inverted lane read as its
-// plain stream, which gets every bit wrong, half on each sampling edge.
+// Victims and aggressors. First one lane is held at a static level and one is
+// inverted, and the RX expects the same, so the run is clean. Then the RX
+// reads the inverted lane as plain, so every bit is wrong, half on each
+// sampling edge.
 static void test_lane_sources(uintptr_t base) {
   const uint64_t fixed = 1ULL << FIXED_LANE;
   const uint64_t inverted = (1ULL << INVERTED_LANE) | (1ULL << UCIE_TRACK_LANE);

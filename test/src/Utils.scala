@@ -165,10 +165,9 @@ script -e -f -c "./simulation +permissive +vcs+thread+16 +dramsim +dramsim_ini_d
       simScript
     ).call(stdout = os.Inherit, stderr = os.Inherit, cwd = simDir)
 
-    // The simulator's exit status does not say whether the test passed: VCS
-    // ends with status 0 after a `$fatal`, whether from SimTop's timeout or
-    // from a failed assertion. SimTop prints its success line only when the
-    // chips report success, so the log decides it.
+    // The simulator's exit status does not show a pass: VCS exits 0 after a
+    // `$fatal`, from SimTop's timeout or a failed assertion. SimTop prints its
+    // success line only when the chips report success, so check the log.
     val simLog = os.read(simDir / "simulation.log")
     val failure =
       Seq("Assertion failed", "Fatal:", "Test timed out!").find(simLog.contains)

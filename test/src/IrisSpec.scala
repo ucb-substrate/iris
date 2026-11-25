@@ -62,9 +62,9 @@ class ClockSourceAtFreqMHz(val freqMHz: Double)
   )
 }
 
-/** Counts the transitions on a UCIe link's observation bumps and reports them
-  * when the simulation ends, so that a test can tell the bumps bring-up puts
-  * a scope on are driven at the chip's pins.
+/** Counts transitions on a UCIe link's observation bumps and reports them at
+  * the end of simulation. A test uses this to check that the bumps bring-up
+  * probes with a scope are driven at the chip's pins.
   */
 class DebugBumpMonitor(name: String)
     extends BlackBox(Map("NAME" -> StringParam(name)))
@@ -516,12 +516,12 @@ class IrisSpec extends AnyFunSpec {
       )
     }
 
-    // PhyTest from software on the core, through the SoC bus and the UCIe
-    // register map, over the behavioral lanes and clocking tile: the same
-    // programs bring-up runs on the chip. See docs/ucie_bringup.md.
-    // `setup_ucie` turns every observation driver on, and the program runs the
-    // TX debug lane and traffic on every RX lane, so every bump of both links
-    // has to have moved: the scope points bring-up relies on reach the pins.
+    // The PhyTest programs bring-up runs on the chip (docs/ucie_bringup.md),
+    // run by the core through the SoC bus and UCIe register map, over the
+    // behavioral lanes and clocking tile.
+    // The loopback program turns every observation driver on for one LFSR run
+    // and drives the TX debug lane and every RX lane. So every debug bump of
+    // both links must toggle, which shows the scope points reach the pins.
     def checkDebugBumps(simLog: String): Unit =
       for (link <- Seq("chip0.ucie0", "chip0.ucie1")) {
         val counts = Utils.debugBumpCounts(simLog, link)
