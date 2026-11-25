@@ -175,8 +175,8 @@ class IrisTop(implicit p: Parameters) extends LazyModule with BindingScope {
 
     // Connect D2D UCIe
     val uciePorts = UciePort.all(p)
-    val c2c_ucie0 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(uciePorts(0).numLanes))
-    val c2c_ucie1 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(uciePorts(1).numLanes))
+    val c2c_ucie0 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(uciePorts(0).numLanes, uciePorts(0).hasTxDebugLane))
+    val c2c_ucie1 = IO(new edu.berkeley.cs.uciedigital.tilelink.UcieBumpsIO(uciePorts(1).numLanes, uciePorts(1).hasTxDebugLane))
     c2c_ucie0 <> system.d2d_port_ios.get(0)
     c2c_ucie1 <> system.d2d_port_ios.get(1)
   }
@@ -583,6 +583,11 @@ class IrisConfig(sim: Boolean = false)
             // in one 2 ns cycle, -0.391 at worst. The block's own timing saw
             // each half alone, inside the 0.2 ns I/O budget its SDC gives the
             // outside. A cycle of latency each way.
+            //
+            // The chip has one off-chip TX data debug lane, in link 1, on its
+            // own bump; link 0 is built without one (`hasTxDebugLane`). Both
+            // keep its registers' slots, so they still share one register
+            // layout. See docs/ucie-debug-bumps.md in the chip repo.
             UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x200000,
               managerWhere = SBUS,
@@ -590,7 +595,8 @@ class IrisConfig(sim: Boolean = false)
               queueParams = AsyncQueueParams(depth = 16),
               includeDefaultModels = true,
               sim = sim,
-              managerBuffer = BufferParams.default
+              managerBuffer = BufferParams.default,
+              hasTxDebugLane = false
             )),
             UcieComplexPort(edu.berkeley.cs.uciedigital.tilelink.UcieTLParams(
               address = 0x208000,
